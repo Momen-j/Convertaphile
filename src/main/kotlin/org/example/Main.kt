@@ -47,66 +47,76 @@ class Gobbler(private val reader: BufferedReader) : Runnable {
 // This is a general utility that can be used for any command-line tool, not just FFmpeg.
 fun executeCommand(command: List<String>, timeoutSeconds: Long = 60): ConversionResult {
     try {
-        // Create a ProcessBuilder instance with the command and its arguments.
+        // 1. Create ProcessBuilder:
+        //    An object that configures how the external process will be started.
         val processBuilder = ProcessBuilder(command)
 
-        // Configure stream redirection.
-        // redirectErrorStream(false): This is important! It keeps standard output and
-        // standard error as separate streams. FFmpeg writes progress and detailed errors
-        // to standard error, so we need to read it separately.
-        processBuilder.redirectErrorStream(false)
-        // Redirect standard output and error to pipes so we can read them from our Kotlin code.
-        processBuilder.redirectOutput(ProcessBuilder.Redirect.PIPE)
-        processBuilder.redirectError(ProcessBuilder.Redirect.PIPE)
+        // 2. Configure Stream Redirection:
+        //    Control how the external process's I/O streams are connected.
+        processBuilder.redirectErrorStream(false) // Keep stdout and stderr separate (important for FFmpeg)
+        processBuilder.redirectOutput(ProcessBuilder.Redirect.PIPE) // Tell the OS to create a pipe for stdout
+        processBuilder.redirectError(ProcessBuilder.Redirect.PIPE)   // Tell the OS to create a pipe for stderr
 
-        // Start the external process.
+        // 3. Start the Process:
+        //    Executes the command. The program waits here briefly while the OS
+        //    sets up the new process. Returns a Process object representing the running process.
         val process = processBuilder.start()
 
         // --- Read output and error streams concurrently ---
-        // Use the Gobbler helper to read the streams in separate threads.
-        // This prevents the parent process (our Kotlin app) from blocking
-        // while waiting for the child process (FFmpeg) to finish, and ensures
-        // that the child process doesn't block due to full output buffers.
+        // 4. Set up Stream Readers:
+        //    Connect InputStreamReaders (byte to char) and BufferedReader (buffered reading)
+        //    to the process's standard output and standard error streams.
         val outputReader = BufferedReader(InputStreamReader(process.inputStream))
         val errorReader = BufferedReader(InputStreamReader(process.errorStream))
 
+        // 5. Create Gobbler Tasks:
+        //    Create instances of our Gobbler class, each assigned to read one of the streams.
         val outputGobbler = Gobbler(outputReader)
         val errorGobbler = Gobbler(errorReader)
 
-        // Start the gobbler threads.
+        // 6. Create and Start Gobbler Threads:
+        //    Create new Thread objects, give them the Gobbler tasks, and start them.
+        //    These threads will now run in the background, reading the streams.
         val outputThread = Thread(outputGobbler).apply { start() }
         val errorThread = Thread(errorGobbler).apply { start() }
         // --- End concurrent stream reading ---
 
-        // Wait for the process to complete within the specified timeout.
-        // waitFor() returns true if the process exited within the timeout, false otherwise.
+        // 7. Wait for Process Completion with Timeout:
+        //    The main thread waits here until the external process finishes OR
+        //    the specified timeout (e.g., 60 seconds) is reached.
+        //    'exited' will be true if it finished within the timeout.
         val exited = process.waitFor(timeoutSeconds, TimeUnit.SECONDS)
 
-        // Join the gobbler threads. This ensures that we finish reading all output
-        // before proceeding, even if the process finished quickly.
+        // 8. Join Gobbler Threads:
+        //    Even if the main thread finishes waiting for the process, we need to
+        //    ensure the gobbler threads have finished reading all available output.
+        //    'join()' makes the main thread wait for these threads to complete their 'run()' method.
         outputThread.join()
         errorThread.join()
 
-        // Check if the process timed out.
+        // 9. Handle Timeout:
+        //    If 'exited' is false, it means the process timed out.
         if (!exited) {
-            // If it timed out, forcibly destroy the process.
+            // Forcibly terminate the external process.
             process.destroyForcibly()
-            // Return a ConversionResult indicating failure due to timeout.
+            // Return a failure result indicating a timeout.
             return ConversionResult(
                 isSuccess = false,
-                exitCode = -1, // Use -1 or another non-zero code to indicate a non-standard exit (like timeout)
-                output = outputGobbler.lines.joinToString("\n"),
-                error = errorGobbler.lines.joinToString("\n") + "\nProcess timed out after $timeoutSeconds seconds."
+                exitCode = -1, // Custom code for timeout
+                output = outputGobbler.lines.joinToString("\n"), // Include any output read so far
+                error = errorGobbler.lines.joinToString("\n") + "\nProcess timed out after $timeoutSeconds seconds." // Include any error output and a timeout message
             )
         }
 
-        // Get the exit code of the finished process.
+        // 10. Get Exit Code and Captured Output:
+        //     If the process finished (didn't time out), get its exit code.
         val exitCode = process.exitValue()
-        // Join the lines captured by the gobblers into single strings.
+        //     Get the full standard output and error captured by the gobblers.
         val stdOutput = outputGobbler.lines.joinToString("\n")
         val stdError = errorGobbler.lines.joinToString("\n")
 
-        // Return the result based on the exit code. FFmpeg typically returns 0 for success.
+        // 11. Return Final Result:
+        //     Create and return a ConversionResult. Success is typically indicated by exit code 0.
         return ConversionResult(
             isSuccess = exitCode == 0,
             exitCode = exitCode,
@@ -115,14 +125,14 @@ fun executeCommand(command: List<String>, timeoutSeconds: Long = 60): Conversion
         )
 
     } catch (e: Exception) {
-        // Catch any exceptions that occur during the process creation or execution itself.
-        // This might happen if the command is not found (FFmpeg not in PATH or incorrect path),
-        // or if there are permission issues.
+        // 12. Handle Exceptions:
+        //     Catch any exceptions that occur during the setup or execution phase
+        //     (e.g., command not found, permission issues).
         System.err.println("Exception during command execution: ${e.message}")
-        // Return a ConversionResult indicating failure due to an exception.
+        //     Return a failure result indicating an exception occurred.
         return ConversionResult(
             isSuccess = false,
-            exitCode = -1, // Indicate an exception occurred
+            exitCode = -1, // Custom code for exception
             output = "",
             error = "Exception during command execution: ${e.message}"
         )
