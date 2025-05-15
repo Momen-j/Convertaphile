@@ -1,8 +1,9 @@
 package org.example.photo
 
-import org.example.utilities.ConvertableFileType
+import org.example.utilities.ConvertibleImageType
 
-class WEBP(override val inputFilePath: String): ConvertableFileType {
+// Represents an instance of a WEBP file
+class WEBP(override val inputFilePath: String): ConvertibleImageType {
     // Inherits the default convertTo implementation
 
     // Override if WEBP conversions need specific flags (e.g., lossless)

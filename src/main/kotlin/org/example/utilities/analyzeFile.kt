@@ -28,7 +28,7 @@ fun analyzeFile(filePath: String, ffprobeExecutablePath: String): FFprobeOutput?
     println("Analyzing file with the following command: ${ffprobeCommand.joinToString(" ")}")
 
     // Execute ffprobe command with executeCommand function
-    val ffprobeResult = executeCommand(ffprobeCommand);
+    val ffprobeResult = executeCommand(ffprobeCommand)
 
     // if ffprobe didn't execute properly
     if (!ffprobeResult.isSuccess) {
@@ -44,7 +44,7 @@ fun analyzeFile(filePath: String, ffprobeExecutablePath: String): FFprobeOutput?
     return try {
         json.decodeFromString<FFprobeOutput>(ffprobeJsonOutput)
     } catch (e: Exception) { // catch (e: JsonDecodingException) ADD THIS LATER
-        System.err.println("FFprobe Raw Output:\n${ffprobeResult.output}")
+        System.err.println("Error Message:\n${e.message}")
         System.err.println("FFprobe Raw Output:\n${ffprobeResult.output}")
         return null
     }

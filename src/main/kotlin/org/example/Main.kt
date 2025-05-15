@@ -1,9 +1,9 @@
 package org.example
 
 import java.io.File
-import org.example.photo.JPEG
-import org.example.photo.WEBP
+import org.example.photo.*
 import org.example.utilities.ConversionResult
+import org.example.utilities.ConvertibleImageType
 import org.example.utilities.analyzeFile
 
 // --- Example Usage ---
@@ -19,11 +19,8 @@ fun main() {
 
 
     // Test File paths
-    //val inputPath = "C:\\Users\\moses\\Documents\\test files\\Rockstar_Games_Logo.jpg"
-    //val outputPath = "C:\\Users\\moses\\Documents\\test files\\Rockstar_Games_Logo.png"
-
-    val inputPath = "C:\\Users\\moses\\Documents\\test files\\bluebird.webp"
-    val outputPath = "C:\\Users\\moses\\Documents\\test files\\bluebird.png"
+    val inputPath = "C:\\Users\\moses\\Documents\\test files\\cash-money.gif" //cash-money bluebird
+    val outputPath = "C:\\Users\\moses\\Documents\\test files\\cash-money.jpeg" //cash-money
 
     // Basic check to see if the input file exists before attempting conversion.
     val inputFile = File(inputPath)
@@ -51,18 +48,43 @@ fun main() {
     println(ffprobeData.format)
 
     // When statement to init input file as correct file class
-    val fileToConvert = when {
+    // Declared as type any to accept different convertible file types
+    val fileToConvert: Any? = when {
         formatName?.contains("jpeg") == true -> { // CHECK IF I NEED TO HAVE THIS ALSO CHECK IF IT CONTAINS jpg
             println("\n~~ Detected file type: JPEG ~~")
             JPEG(inputPath)
         }
         formatName?.contains("png") == true -> {
             println("\n~~ Detected file type: PNG ~~")
-            //PNG(inputPath)
+            PNG(inputPath)
         }
         formatName?.contains("webp") == true -> {
             println("\n~~ Detected file type: WEBP ~~")
-            JPEG(inputPath)
+            WEBP(inputPath)
+        }
+        formatName?.contains("gif") == true -> {
+            println("\n~~ Detected file type: GIF ~~")
+            GIF(inputPath)
+        }
+        formatName?.contains("ico") == true -> {
+            println("\n~~ Detected file type: GIF ~~")
+            ICO(inputPath)
+        }
+        formatName?.contains("avif") == true -> {
+            println("\n~~ Detected file type: GIF ~~")
+            AVIF(inputPath)
+        }
+        formatName?.contains("bmp") == true -> {
+            println("\n~~ Detected file type: GIF ~~")
+            BMP(inputPath)
+        }
+        formatName?.contains("svg") == true -> {
+            println("\n~~ Detected file type: GIF ~~")
+            SVG(inputPath)
+        }
+        formatName?.contains("tiff") == true -> {
+            println("\n~~ Detected file type: GIF ~~")
+            TIFF(inputPath)
         }
         hasVideoStream -> {
             println("\n~~ Detected file type: VIDEO ~~ WILL BE CHANGNING TO SPECIFIC VIDEO TYPES")
@@ -90,8 +112,7 @@ fun main() {
     // For now I'll hard code in order to test
 
     val conversionResult: ConversionResult = when (fileToConvert) {
-        is JPEG -> fileToConvert.convertTo(outputPath, ffmpegExecutablePath)
-        is WEBP -> fileToConvert.convertTo(outputPath, ffmpegExecutablePath)
+        is ConvertibleImageType -> fileToConvert.convertTo(outputPath, ffmpegExecutablePath)
         null -> {
             System.err.println("Internal Error: fileToConvert is null after initial check.")
             ConversionResult(

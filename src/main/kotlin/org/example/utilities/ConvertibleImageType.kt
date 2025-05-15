@@ -1,9 +1,6 @@
 package org.example.utilities
 
-import org.example.utilities.ConversionResult
-import org.example.utilities.executeCommand
-
-interface ConvertableFileType {
+interface ConvertibleImageType {
     val inputFilePath: String // property all implementing classes must provide
 
     /**
@@ -30,7 +27,7 @@ interface ConvertableFileType {
         // Log whether conversion was a success
         // SECTION TO USE LOGGING TOOLS
         if (result.isSuccess) {
-            println("Successfully converted $inputFilePath to $outputFilePath");
+            println("Successfully converted $inputFilePath to $outputFilePath")
         } else {
             System.err.println("Failed to convert $inputFilePath to $outputFilePath. Exit Code: ${result.exitCode}")
             System.err.println("FFmpeg Error Output:\n${result.error}")
