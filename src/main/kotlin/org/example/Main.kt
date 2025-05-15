@@ -3,26 +3,22 @@ package org.example
 import java.io.File
 import org.example.photo.JPEG
 import org.example.photo.WEBP
+import org.example.utilities.ConversionResult
+import org.example.utilities.analyzeFile
 
 // --- Example Usage ---
 fun main() {
-    // --- Configuration: Get FFmpeg path from environment variable ---
-    // This is where you read the environment variable.
-    // System.getenv("FFMPEG_PATH") attempts to read the variable named "FFMPEG_PATH".
-    // The Elvis operator (?:) provides a default value if the environment variable is not set.
-    // In a production environment, you might want to throw an error if the variable is missing,
-    // as FFmpeg is a mandatory dependency.
+    // --- Configuration: Get FFmpeg & FFprobe path from environment variable ---
     val ffmpegExecutablePath = System.getenv("FFMPEG_PATH")
-        ?: "C:\\ffmpeg\\ffmpeg-7.0.2-full_build\\ffmpeg-7.0.2-full_build\\bin\\ffmpeg.exe" // Default path (common on many Linux systems). Adjust as needed for your server OS.
-    // If running on Windows locally for testing, you might set this default to:
-    // ?: "C:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe" // Example Windows path - adjust to your install location
+        ?: "C:\\ffmpeg\\ffmpeg-7.0.2-full_build\\ffmpeg-7.0.2-full_build\\bin\\ffmpeg.exe" // Default path
 
-    println("Using FFmpeg executable path: $ffmpegExecutablePath")
+    val ffprobeExecutablePath = System.getenv("FFPROBE_PATH")
+        ?: "C:\\ffmpeg\\ffmpeg-7.0.2-full_build\\ffmpeg-7.0.2-full_build\\bin\\ffprobe.exe"
+
     // --- End Configuration ---
 
 
-    // Replace with actual paths to test files on your system.
-    // Ensure these files exist for the example to run.
+    // Test File paths
     //val inputPath = "C:\\Users\\moses\\Documents\\test files\\Rockstar_Games_Logo.jpg"
     //val outputPath = "C:\\Users\\moses\\Documents\\test files\\Rockstar_Games_Logo.png"
 
@@ -33,17 +29,89 @@ fun main() {
     val inputFile = File(inputPath)
     if (!inputFile.exists()) {
         System.err.println("Error: Input file not found at $inputPath. Please update the path.")
-        // If the input file doesn't exist, we can't proceed.
+        // FRONT END CODE SHOULD HAVE TINY POP UP APPEAR
         return
     }
 
-    // Instantiate the JPEG class with the input file path.
-    //val jpegFile = JPEG(inputPath)
-    val webpFile = WEBP(inputPath)
+    // -- Analyze the file with analzeFile that uses FFprobe
+    println("-- Analyzing Input File --")
+    val ffprobeData = analyzeFile(inputPath, ffprobeExecutablePath)
 
-    // Call the toPNG function, passing the desired output path and the configured FFmpeg path.
-    //val conversionResult = jpegFile.toPNG(outputPath, ffmpegExecutablePath)
-    val conversionResult = webpFile.toPNG(outputPath, ffmpegExecutablePath)
+    if (ffprobeData == null) {
+        System.err.println("! Failed to analyze input file - Conversion will not continue !")
+        // FRONT END CODE SHOULD HAVE ERROR RESPONSE APPEAR
+        return
+    }
+
+    // -- Determine File Type and init the correct class based on analyzeFile
+    println("\n--Determining File Type --")
+    val formatName = ffprobeData.format?.formatName
+    val hasVideoStream = ffprobeData.streams?.any {it.codecType == "video"} == true
+    val hasAudioStream = ffprobeData.streams?.any {it.codecType == "audio"} == true
+    println(ffprobeData.format)
+
+    // When statement to init input file as correct file class
+    val fileToConvert = when {
+        formatName?.contains("jpeg") == true -> { // CHECK IF I NEED TO HAVE THIS ALSO CHECK IF IT CONTAINS jpg
+            println("\n~~ Detected file type: JPEG ~~")
+            JPEG(inputPath)
+        }
+        formatName?.contains("png") == true -> {
+            println("\n~~ Detected file type: PNG ~~")
+            //PNG(inputPath)
+        }
+        formatName?.contains("webp") == true -> {
+            println("\n~~ Detected file type: WEBP ~~")
+            JPEG(inputPath)
+        }
+        hasVideoStream -> {
+            println("\n~~ Detected file type: VIDEO ~~ WILL BE CHANGNING TO SPECIFIC VIDEO TYPES")
+            null
+        }
+        hasAudioStream -> {
+            println("\n~~ Detected file type: AUDIO ~~ WILL BE CHANGNING TO SPECIFIC AUDIO TYPES")
+            null
+        }
+        else -> {
+            System.err.println("!! Detected unknown/unsupported file type !!")
+            null
+        }
+    }
+
+    if (fileToConvert == null) {
+        System.err.println("Cannot proceed with conversion due to unsupported file type.")
+        // FRONTEND: RETURN ERROR RESPONSE
+        return
+    }
+
+    println("\n-- Converting File... ---")
+    // Determine target format
+    // This is where the front end comes in and calls a specific function to run depending on what the use clicks
+    // For now I'll hard code in order to test
+
+    val conversionResult: ConversionResult = when (fileToConvert) {
+        is JPEG -> fileToConvert.convertTo(outputPath, ffmpegExecutablePath)
+        is WEBP -> fileToConvert.convertTo(outputPath, ffmpegExecutablePath)
+        null -> {
+            System.err.println("Internal Error: fileToConvert is null after initial check.")
+            ConversionResult(
+                isSuccess = false,
+                exitCode = -1,
+                output = "",
+                error = "Internal error during file type handling."
+            )
+        }
+        // Handle any other unexpected types that might slip through
+        else -> {
+            System.err.println("Conversion logic not implemented for this file type or target format.")
+            ConversionResult(
+                isSuccess = false,
+                exitCode = -1,
+                output = "",
+                error = "Unsupported file type or missing conversion logic."
+            )
+        }
+    }
 
     // Check the result of the conversion.
     if (conversionResult.isSuccess) {
@@ -59,4 +127,15 @@ fun main() {
         System.err.println("Overall conversion process failed.")
         // The detailed error from FFmpeg is already printed within the toPNG function.
     }
+
+    // QUESTIONS:
+    // How do I make the output path a new name everytime, even if someone tries to convert the same file
+    // to the above, seems like having temp files solves that
+
+    // --- Cleanup (In a real application, this would happen after streaming the output) ---
+    // println("\n--- Cleaning up temporary files ---")
+    // inputFile.delete() // Delete the temporary input file
+    // File(outputPath).delete() // Delete the temporary output file
+    // println("Temporary files deleted.")
+    // --- End Cleanup ---
 }
