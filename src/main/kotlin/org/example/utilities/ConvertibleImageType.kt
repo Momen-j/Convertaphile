@@ -19,7 +19,7 @@ interface ConvertibleImageType {
             outputFilePath
         )
 
-        println("Converting WEBP to $outputFilePath using command: ${command.joinToString("")}")
+        println("Converting $inputFilePath to $outputFilePath using command: ${command.joinToString(" | ")}")
 
         // Execute the FFmpeg command using executeCommand helper function and assign the result
         val result = executeCommand(command)

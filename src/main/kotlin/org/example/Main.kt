@@ -66,10 +66,10 @@ fun main() {
             println("\n~~ Detected file type: GIF ~~")
             GIF(inputPath)
         }
-        formatName?.contains("ico") == true -> {
-            println("\n~~ Detected file type: GIF ~~")
-            ICO(inputPath)
-        }
+//        formatName?.contains("ico") == true -> {
+//            println("\n~~ Detected file type: GIF ~~")
+//            ICO(inputPath)
+//        }
         formatName?.contains("avif") == true -> {
             println("\n~~ Detected file type: GIF ~~")
             AVIF(inputPath)
@@ -77,10 +77,6 @@ fun main() {
         formatName?.contains("bmp") == true -> {
             println("\n~~ Detected file type: GIF ~~")
             BMP(inputPath)
-        }
-        formatName?.contains("svg") == true -> {
-            println("\n~~ Detected file type: GIF ~~")
-            SVG(inputPath)
         }
         formatName?.contains("tiff") == true -> {
             println("\n~~ Detected file type: GIF ~~")

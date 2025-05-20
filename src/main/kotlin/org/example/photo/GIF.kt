@@ -18,8 +18,10 @@ class GIF(override val inputFilePath: String): ConvertibleImageType {
         val targetExtension = File(outputFilePath).extension.lowercase()
 
         // Check if the target format is a single image format
+        // POTENTIALLY ADDING LATER
+        // "ico", "svg"
         val isSingleFormat = when (targetExtension) {
-            "jpg", "jpeg", "png", "webp", "bmp", "svg", "tiff", "ico" -> true
+            "jpg", "jpeg", "png", "webp", "bmp", "svg", "tiff", "avif" -> true
             else -> false
         }
 
