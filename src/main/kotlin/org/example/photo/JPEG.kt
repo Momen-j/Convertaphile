@@ -1,9 +1,9 @@
 package org.example.photo
 
-import org.example.utilities.ConvertibleImageType
+import org.example.utilities.FFmpegConvertibleType
 
 // Represents an instance of a JPEG file
-class JPEG(override val inputFilePath: String): ConvertibleImageType {
+class JPEG(override val inputFilePath: String): FFmpegConvertibleType {
     // If a specific JPEG conversion requires extra flags (e.g., quality),
     // I can override the convertTo function:
     /*

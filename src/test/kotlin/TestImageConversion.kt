@@ -7,10 +7,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 
 import org.example.photo.*
-import org.example.utilities.ConversionResult // Import ConversionResult
-import org.example.utilities.ConvertibleImageType
-import org.example.utilities.executeCommand // Import executeCommand (needed by ConvertibleImageType)
-import org.example.utilities.analyzeFile // Import analyzeFileWithFfprobe (useful for setup or advanced checks)
+import org.example.utilities.FFmpegConvertibleType
 import org.junit.jupiter.params.provider.Arguments
 import java.io.File
 import java.util.UUID // For generating unique filenames
@@ -58,7 +55,7 @@ class ImageConversionTest {
             val classLoader = this::class.java.classLoader // Get the classloader
 
             for (format in SUPPORTED_IMAGE_FORMATS) {
-                val resourceName = "sample.$format" // Assuming files are named like sample.jpg, sample.png, etc.
+                val resourceName = "image/sample.$format" // Assuming files are named like sample.jpg, sample.png, etc.
                 val resourceUrl = classLoader.getResource(resourceName) // Get the URL of the resource
 
                 if (resourceUrl == null) {
@@ -106,9 +103,9 @@ class ImageConversionTest {
         }
     }
 
-    // Helper function to get the correct ConvertibleImageType instance for a given file path
+    // Helper function to get the correct FFmpegConvertibleType instance for a given file path
     // You'll need to expand this to handle all your image classes
-    private fun getConvertibleFileInstance(filePath: String): ConvertibleImageType {
+    private fun getConvertibleFileInstance(filePath: String): FFmpegConvertibleType {
         // In a real test, you might use ffprobe here to reliably determine the type,
         // but for simplicity in tests, we'll assume the file extension is correct
         val extension = File(filePath).extension.lowercase()
@@ -140,7 +137,7 @@ class ImageConversionTest {
         val inputFile = File(inputFilePath)
         assertTrue(inputFile.exists(), "Input test file does not exist: $inputFilePath")
 
-        // Get the correct ConvertibleImageType instance for the input file
+        // Get the correct FFmpegConvertibleType instance for the input file
         val sourceFile = getConvertibleFileInstance(inputFilePath)
 
         // Generate a unique output file path in the temporary directory
@@ -204,6 +201,6 @@ class ImageConversionTest {
     }
 
     // TODO: Add more specific tests for conversions with custom flags or expected behavior.
-    // For example, test ICO conversion, test SVG conversion (which might need different flags),
-    // test animated GIF to MP4 (when you add video support).
+    // For example, test ICO conversion, test SVG conversion (which need different flags),
+    // test animated GIF to MP4 (when I add video support).
 }

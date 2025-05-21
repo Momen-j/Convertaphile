@@ -1,12 +1,12 @@
 package org.example.photo
 
 import org.example.utilities.ConversionResult
-import org.example.utilities.ConvertibleImageType
+import org.example.utilities.FFmpegConvertibleType
 import org.example.utilities.executeCommand
 import java.io.File
 
 // Represents an instance of a GIF file
-class GIF(override val inputFilePath: String): ConvertibleImageType {
+class GIF(override val inputFilePath: String): FFmpegConvertibleType {
     // override convertTo function in case I need to specify flags
     /**
      * Overrides the default convertTo implementation for GIF files.

@@ -3,8 +3,10 @@ package org.example
 import java.io.File
 import org.example.photo.*
 import org.example.utilities.ConversionResult
-import org.example.utilities.ConvertibleImageType
+import org.example.utilities.FFmpegConvertibleType
 import org.example.utilities.analyzeFile
+import org.example.video.*
+import org.example.audio.*
 
 // --- Example Usage ---
 fun main() {
@@ -48,47 +50,84 @@ fun main() {
     println(ffprobeData.format)
 
     // When statement to init input file as correct file class
-    // Declared as type any to accept different convertible file types
+    // Instantiate the correct file type class.
+    // This 'when' statement maps ffprobe data to your specific file classes.
+    // The type of 'fileToConvert' will be the common supertype of all branches,
+    // which is FFmpegConvertibleType?
     val fileToConvert: Any? = when {
         formatName?.contains("jpeg") == true -> { // CHECK IF I NEED TO HAVE THIS ALSO CHECK IF IT CONTAINS jpg
-            println("\n~~ Detected file type: JPEG ~~")
+            println("\n~~ Detected file type: .JPEG ~~")
             JPEG(inputPath)
         }
         formatName?.contains("png") == true -> {
-            println("\n~~ Detected file type: PNG ~~")
+            println("\n~~ Detected file type: .PNG ~~")
             PNG(inputPath)
         }
         formatName?.contains("webp") == true -> {
-            println("\n~~ Detected file type: WEBP ~~")
+            println("\n~~ Detected file type: .WEBP ~~")
             WEBP(inputPath)
         }
         formatName?.contains("gif") == true -> {
-            println("\n~~ Detected file type: GIF ~~")
+            println("\n~~ Detected file type: .GIF ~~")
             GIF(inputPath)
         }
-//        formatName?.contains("ico") == true -> {
-//            println("\n~~ Detected file type: GIF ~~")
-//            ICO(inputPath)
-//        }
         formatName?.contains("avif") == true -> {
-            println("\n~~ Detected file type: GIF ~~")
+            println("\n~~ Detected file type: .AVIF ~~")
             AVIF(inputPath)
         }
         formatName?.contains("bmp") == true -> {
-            println("\n~~ Detected file type: GIF ~~")
+            println("\n~~ Detected file type: .BMP ~~")
             BMP(inputPath)
         }
         formatName?.contains("tiff") == true -> {
-            println("\n~~ Detected file type: GIF ~~")
+            println("\n~~ Detected file type: .TIFF ~~")
             TIFF(inputPath)
         }
         hasVideoStream -> {
-            println("\n~~ Detected file type: VIDEO ~~ WILL BE CHANGNING TO SPECIFIC VIDEO TYPES")
-            null
+            println("\n~~ Detected a VIDEO file")
+            if (formatName?.contains("mp4") == true) {
+                println("\n~~ Detected file type: .MP4 ~~")
+                MP4(inputPath)
+            } else if (formatName?.contains("mkv") == true) {
+                println("\n~~ Detected file type: .MKV ~~")
+                MKV(inputPath)
+            } else if (formatName?.contains("mov") == true) {
+                println("\n~~ Detected file type: .MOV ~~")
+                MOV(inputPath)
+            } else if (formatName?.contains("avi") == true) {
+                println("\n~~ Detected file type: .AVI ~~")
+                AVI(inputPath)
+            } else if (formatName?.contains("webm") == true) {
+                println("\n~~ Detected file type: .WEBM ~~")
+                WEBM(inputPath)
+            } else if (formatName?.contains("wmv") == true) {
+                println("\n~~ Detected file type: .WMV ~~")
+                WMV(inputPath)
+            } else {
+                // Fallback for other video containers, or throw error if not supported
+                System.err.println("Detected unsupported video container: $formatName")
+                null
+            }
         }
         hasAudioStream -> {
-            println("\n~~ Detected file type: AUDIO ~~ WILL BE CHANGNING TO SPECIFIC AUDIO TYPES")
-            null
+            println("\n~~ Detected an AUDIO file")
+            if (formatName?.contains("mp3") == true || ffprobeData.streams?.any { it.codecType == "audio" && it.codecName == "mp3" } == true) {
+                MP3(inputPath)
+            } else if (formatName?.contains("aac") == true || ffprobeData.streams?.any { it.codecType == "audio" && it.codecName == "aac" } == true) {
+                AAC(inputPath)
+            } else if (formatName?.contains("flac") == true || ffprobeData.streams?.any { it.codecType == "audio" && it.codecName == "flac" } == true) {
+                FLAC(inputPath)
+            } else if (formatName?.contains("m4a") == true || ffprobeData.streams?.any { it.codecType == "audio" && it.codecName == "m4a" } == true) {
+                M4A(inputPath)
+            } else if (formatName?.contains("ogg") == true || ffprobeData.streams?.any { it.codecType == "audio" && it.codecName == "ogg" } == true) {
+                OGG(inputPath)
+            } else if (formatName?.contains("wav") == true || ffprobeData.streams?.any { it.codecType == "audio" && it.codecName == "wav" } == true) {
+                WAV(inputPath)
+            } else {
+                // Fallback for other audio containers, or throw error if not supported
+                System.err.println("Detected unsupported audio container: $formatName")
+                null
+            }
         }
         else -> {
             System.err.println("!! Detected unknown/unsupported file type !!")
@@ -108,7 +147,7 @@ fun main() {
     // For now I'll hard code in order to test
 
     val conversionResult: ConversionResult = when (fileToConvert) {
-        is ConvertibleImageType -> fileToConvert.convertTo(outputPath, ffmpegExecutablePath)
+        is FFmpegConvertibleType -> fileToConvert.convertTo(outputPath, ffmpegExecutablePath)
         null -> {
             System.err.println("Internal Error: fileToConvert is null after initial check.")
             ConversionResult(
