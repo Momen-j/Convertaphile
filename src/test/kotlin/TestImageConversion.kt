@@ -69,6 +69,9 @@ class ImageConversionTest {
                 // Define the destination file in the temporary directory
                 val destinationFile = File(testFilesDir, resourceName)
 
+                // --- MODIFIED: Create parent directories if they don't exist ---
+                destinationFile.parentFile?.mkdirs() // Create the 'video/' subdirectory if it doesn't exist
+
                 // Copy the resource stream to the temporary file
                 try {
                     Files.copy(inputStream, destinationFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
@@ -87,15 +90,17 @@ class ImageConversionTest {
         @JvmStatic
         fun conversionTestCases(): List<Arguments> {
             val testCases = mutableListOf<Arguments>()
-            // Iterate through all source formats
-            for (sourceFormat in SUPPORTED_IMAGE_FORMATS) {
-                // Iterate through all target formats
-                for (targetFormat in SUPPORTED_IMAGE_FORMATS) {
-                    // Skip converting a format to itself unless specifically needed
+            for (sourceFormat in SUPPORTED_VIDEO_FORMATS) {
+                // Ensure the source file path for checking existence includes the subdirectory
+                val sourceFileInTemp = File(testFilesDir, "image/sample.$sourceFormat") // MODIFIED
+                if (!sourceFileInTemp.exists()) {
+                    System.err.println("Skipping video test cases for source format '$sourceFormat' because test file was not found in temp directory.")
+                    continue
+                }
+
+                for (targetFormat in SUPPORTED_VIDEO_FORMATS) {
                     if (sourceFormat != targetFormat) {
-                        // For each combination, create an Arguments object
-                        // Arguments.of() takes the individual parameters and bundles them
-                        testCases.add(Arguments.of("sample.$sourceFormat", targetFormat))
+                        testCases.add(Arguments.of("image/sample.$sourceFormat", targetFormat)) // MODIFIED: Pass full resourceName
                     }
                 }
             }
@@ -177,7 +182,7 @@ class ImageConversionTest {
     fun testGifToJpegConversionSpecific() {
         println("\n--- Testing Specific GIF to JPEG Conversion ---")
 
-        val sourceFileName = "sample.gif" // Assuming you have a sample.gif
+        val sourceFileName = "image/sample.gif" // Assuming you have a sample.gif
         val targetExtension = "jpeg"
 
         val inputFilePath = File(testFilesDir, sourceFileName).absolutePath

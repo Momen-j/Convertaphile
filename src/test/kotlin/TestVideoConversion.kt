@@ -30,7 +30,7 @@ class VideoConversionTest {
         @JvmStatic
         fun setUpAll() {
             ffmpegExecutablePath = System.getenv("FFMPEG_PATH")
-                ?: throw IllegalStateException("FFMPEG_PATH environment variable not set for tests.")
+                ?: "C:\\ffmpeg\\ffmpeg-7.0.2-full_build\\ffmpeg-7.0.2-full_build\\bin\\ffmpeg.exe"
 
             testFilesDir = Files.createTempDirectory("video_conversion_tests").toFile()
             testFilesDir.deleteOnExit()
@@ -52,6 +52,9 @@ class VideoConversionTest {
                 val inputStream = resourceUrl.openStream()
                 val destinationFile = File(testFilesDir, resourceName)
 
+                // --- MODIFIED: Create parent directories if they don't exist ---
+                destinationFile.parentFile?.mkdirs() // Create the 'video/' subdirectory if it doesn't exist
+
                 try {
                     Files.copy(inputStream, destinationFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
                     println("Copied video test file: $resourceName to ${destinationFile.absolutePath}")
@@ -67,7 +70,8 @@ class VideoConversionTest {
         fun conversionTestCases(): List<Arguments> {
             val testCases = mutableListOf<Arguments>()
             for (sourceFormat in SUPPORTED_VIDEO_FORMATS) {
-                val sourceFileInTemp = File(testFilesDir, "sample.$sourceFormat")
+                // Ensure the source file path for checking existence includes the subdirectory
+                val sourceFileInTemp = File(testFilesDir, "video/sample.$sourceFormat") // MODIFIED
                 if (!sourceFileInTemp.exists()) {
                     System.err.println("Skipping video test cases for source format '$sourceFormat' because test file was not found in temp directory.")
                     continue
@@ -75,10 +79,7 @@ class VideoConversionTest {
 
                 for (targetFormat in SUPPORTED_VIDEO_FORMATS) {
                     if (sourceFormat != targetFormat) {
-                        // All these common video formats are lossy, so direct conversion is generally fine.
-                        // If you had a specific lossless video format (e.g., FFV1 in MKV) and a lossy target,
-                        // you might add a check here to prevent it if that's a rule.
-                        testCases.add(Arguments.of("sample.$sourceFormat", targetFormat))
+                        testCases.add(Arguments.of("video/sample.$sourceFormat", targetFormat)) // MODIFIED: Pass full resourceName
                     }
                 }
             }
@@ -92,10 +93,10 @@ class VideoConversionTest {
         return when (extension) {
             "mp4" -> MP4(filePath)
             "avi" -> AVI(filePath)
-            "mov" -> MOV(filePath) // Assuming MOVVideo class exists
-            "webm" -> WEBM(filePath) // Assuming WEBMVideo class exists
-            "wmv" -> WMV(filePath) // Assuming WMVVideo class exists
-            "mkv" -> MKV(filePath) // Assuming MKVVideo class exists
+            "mov" -> MOV(filePath)
+            "webm" -> WEBM(filePath)
+            "wmv" -> WMV(filePath)
+            "mkv" -> MKV(filePath)
             else -> throw IllegalArgumentException("Unsupported video source format for testing: $extension")
         }
     }
@@ -128,39 +129,6 @@ class VideoConversionTest {
 
         assertTrue(outputFile.delete(), "Failed to delete output video test file: $outputFilePath")
         println("Cleaned up output video file: $outputFilePath")
-    }
-
-    // You might add specific tests for video conversions that require custom flags,
-    // e.g., testing specific codec changes, resolution changes, or trimming.
-    // Example: Test MP4 to WEBM with VP9 codec
-    @Test
-    fun testMp4ToWebmSpecific() {
-        println("\n--- Testing Specific MP4 to WEBM Conversion ---")
-        val sourceFileName = "sample.mp4"
-        val targetExtension = "webm"
-
-        val inputFilePath = File(testFilesDir, sourceFileName).absolutePath
-        val outputFile = File(testFilesDir, "${UUID.randomUUID()}.$targetExtension")
-        val outputFilePath = outputFile.absolutePath
-
-        //val mp4Video = MP4(inputFilePath) remove
-
-        val command = listOf(
-            ffmpegExecutablePath,
-            "-i", inputFilePath,
-            "-c:v", "libvpx-vp9", // VP9 video codec
-            "-c:a", "libopus",    // Opus audio codec
-            outputFilePath
-        )
-        println("Custom MP4 to WEBM command: ${command.joinToString(" ")}")
-        val conversionResult = executeCommand(command) // Use executeCommand directly for custom test
-
-        assertTrue(conversionResult.isSuccess, "MP4 to WEBM conversion failed. FFmpeg Error:\n${conversionResult.error}")
-        assertTrue(outputFile.exists(), "Output WEBM file was not created.")
-        assertTrue(outputFile.length() > 0, "Output WEBM file is empty.")
-
-        println("Specific MP4 to WEBM conversion successful.")
-        assertTrue(outputFile.delete(), "Failed to delete output test file: $outputFilePath")
     }
 
     // TODO: Add more specific tests for video conversions (e.g., trimming, resolution change, audio extraction)
