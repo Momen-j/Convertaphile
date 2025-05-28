@@ -73,6 +73,44 @@ class AVI(override val inputFilePath: String): FFmpegConvertibleType {
                 command.add("-b:a")
                 command.add("128k")
             }
+            "mp3" -> {
+                command.add("-c:a")
+                command.add("libmp3lame") // MP3 encoder
+                command.add("-b:a")
+                command.add("192k")      // Example bitrate for audio
+                command.add("-vn")       // Crucial: Tells FFmpeg to disable video stream
+            }
+            "aac" -> {
+                command.add("-c:a")
+                command.add("aac")       // AAC encoder
+                command.add("-b:a")
+                command.add("192k")
+                command.add("-vn")
+            }
+            "wav" -> {
+                command.add("-c:a")
+                command.add("pcm_s16le") // PCM S16 LE (uncompressed audio)
+                command.add("-vn")
+            }
+            "flac" -> {
+                command.add("-c:a")
+                command.add("flac")      // FLAC encoder
+                command.add("-vn")
+            }
+            "ogg" -> {
+                command.add("-c:a")
+                command.add("libvorbis") // Vorbis encoder for OGG
+                command.add("-q:a")
+                command.add("5")         // Quality scale for Vorbis
+                command.add("-vn")
+            }
+            "m4a" -> {
+                command.add("-c:a")
+                command.add("aac")       // M4A usually contains AAC
+                command.add("-b:a")
+                command.add("192k")
+                command.add("-vn")
+            }
             else -> {
                 System.err.println("No specific codecs defined for .$targetExtension when converting from AVI. Attempting default conversion.")
             }
