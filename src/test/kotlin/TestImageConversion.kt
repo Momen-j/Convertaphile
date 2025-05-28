@@ -90,7 +90,7 @@ class ImageConversionTest {
         @JvmStatic
         fun conversionTestCases(): List<Arguments> {
             val testCases = mutableListOf<Arguments>()
-            for (sourceFormat in SUPPORTED_VIDEO_FORMATS) {
+            for (sourceFormat in SUPPORTED_IMAGE_FORMATS) {
                 // Ensure the source file path for checking existence includes the subdirectory
                 val sourceFileInTemp = File(testFilesDir, "image/sample.$sourceFormat") // MODIFIED
                 if (!sourceFileInTemp.exists()) {
@@ -98,7 +98,7 @@ class ImageConversionTest {
                     continue
                 }
 
-                for (targetFormat in SUPPORTED_VIDEO_FORMATS) {
+                for (targetFormat in SUPPORTED_IMAGE_FORMATS) {
                     if (sourceFormat != targetFormat) {
                         testCases.add(Arguments.of("image/sample.$sourceFormat", targetFormat)) // MODIFIED: Pass full resourceName
                     }
