@@ -1,5 +1,7 @@
 package org.example.utilities
 
+import java.io.File
+
 interface FFmpegConvertibleType {
     val inputFilePath: String // property all implementing classes must provide
 
@@ -13,11 +15,33 @@ interface FFmpegConvertibleType {
         // Construct FFmpeg command as list of strings
         // command structure to convert image formats:
         // ffmpegPath -i input_file output_file
-        val command = listOf(
+        val targetExtension = File(outputFilePath).extension.lowercase()
+
+        val command = mutableListOf(
             ffmpegExecutablePath,
             "-i", inputFilePath, // "-i" specifies the input file followed by the input file path
-            outputFilePath
         )
+
+        when (targetExtension) {
+            "avif" -> {
+                // Specific flags for AVIF output (using libaom-av1 encoder)
+                command.add("-c:v")
+                command.add("libaom-av1")
+                command.add("-crf")
+                command.add("23") // A common good quality setting for AV1 (lower is better, e.g., 23-35)
+                // Explicitly set pixel format for AVIF, often yuv420p or yuva420p (if transparency)
+                command.add("-pix_fmt")
+                command.add("yuv420p")
+                // For very large images, sometimes downscaling is necessary for AV1 to complete reliably
+                // command.add("-vf")
+                // command.add("scale=1920:-1") // Example: Scale to 1920px width, maintain aspect ratio
+            }
+            else -> {
+
+            }
+        }
+
+        command.add(outputFilePath) // Add the output file path at the end
 
         println("Converting $inputFilePath to $outputFilePath using command: ${command.joinToString(" | ")}")
 
