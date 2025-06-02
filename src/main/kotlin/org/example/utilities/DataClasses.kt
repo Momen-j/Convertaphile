@@ -3,6 +3,7 @@ package org.example.utilities
 // Import kotlinx.serialization related classes
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import java.io.File
 
 // Data class to encapsulate the result of an external command execution.
 // This makes it easy to check for success, get the exit code, and see
@@ -13,6 +14,12 @@ data class ConversionResult(
     val exitCode: Int,      // The exit code of the process (0 usually means success)
     val output: String,     // Content printed to the command's standard output
     val error: String       // Content printed to the command's standard error (FFmpeg often uses this for progress/errors)
+)
+
+data class ConversionRouteConfig(
+    val ffmpegExecutablePath: String,
+    val ffprobeExecutablePath: String,
+    val tempFilesBaseDir: File
 )
 
 // --- Data classes to match ffprobe JSON structure (simplified) ---

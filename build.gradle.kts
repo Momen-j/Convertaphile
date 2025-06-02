@@ -30,6 +30,11 @@ dependencies {
     implementation("io.ktor:ktor-server-host-common-jvm:2.3.11")
     implementation("io.ktor:ktor-server-sessions:2.3.11")
 
+    // This module contains many core Ktor I/O utilities and extensions.
+    implementation("io.ktor:ktor-utils-jvm:2.3.11")
+
+    // Add this for ByteReadChannel and IO operations
+    implementation("io.ktor:ktor-io-jvm:2.3.11")
 
     // Your existing kotlinx.serialization-json dependency
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
