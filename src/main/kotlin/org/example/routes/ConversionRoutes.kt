@@ -148,10 +148,10 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
             val formatName = ffprobeData?.format?.formatName
             val hasVideoStream = ffprobeData?.streams?.any { it.codecType == "video" } == true
             val hasAudioStream = ffprobeData?.streams?.any { it.codecType == "audio" } == true
-            val fileExtension = tempInputFile.extension.toLowerCase() // Get the file extension
+            val fileExtension = tempInputFile.extension.lowercase() // Get the file extension
 
             val fileToConvert: FFmpegConvertibleType? = when {
-                formatName?.contains("jpeg") == true || fileExtension == "jpeg" -> { // CHECK IF I NEED TO HAVE THIS ALSO CHECK IF IT CONTAINS jpg
+                formatName?.contains("jpeg") == true || fileExtension == "jpeg" || fileExtension == "jpg" -> { // CHECK IF I NEED TO HAVE THIS ALSO CHECK IF IT CONTAINS jpg
                     println("\n~~ Detected file type: .JPEG ~~")
                     JPEG(tempInputFile.absolutePath)
                 }

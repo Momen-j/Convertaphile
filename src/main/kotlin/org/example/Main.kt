@@ -148,15 +148,6 @@ fun main() {
 
     val conversionResult: ConversionResult = when (fileToConvert) {
         is FFmpegConvertibleType -> fileToConvert.convertTo(outputPath, ffmpegExecutablePath)
-        null -> {
-            System.err.println("Internal Error: fileToConvert is null after initial check.")
-            ConversionResult(
-                isSuccess = false,
-                exitCode = -1,
-                output = "",
-                error = "Internal error during file type handling."
-            )
-        }
         // Handle any other unexpected types that might slip through
         else -> {
             System.err.println("Conversion logic not implemented for this file type or target format.")

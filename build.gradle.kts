@@ -36,16 +36,30 @@ dependencies {
     // Add this for ByteReadChannel and IO operations
     implementation("io.ktor:ktor-io-jvm:2.3.11")
 
-    // Your existing kotlinx.serialization-json dependency
+    // existing kotlinx.serialization-json dependency
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
 
-    // --- JUnit 5 Dependencies (Explicitly managed with BOM) ---
-    // Remove testImplementation(kotlin("test"))
-    testImplementation(platform("org.junit:junit-bom:5.10.0")) // Use JUnit Platform BOM for consistent versions
-    testImplementation("org.junit.jupiter:junit-jupiter-api")
-    testImplementation("org.junit.jupiter:junit-jupiter-engine")
-    testImplementation("org.junit.jupiter:junit-jupiter-params")
-    // --- End JUnit 5 Dependencies ---
+    // Ktor Test Dependencies
+    testImplementation("io.ktor:ktor-server-test-host:2.3.11") // For withTestApplication/testApplication
+    testImplementation("io.ktor:ktor-client-content-negotiation:2.3.11") // If you need client-side JSON in tests
+    testImplementation("io.ktor:ktor-client-core:2.3.11")
+    testImplementation("io.ktor:ktor-client-cio:2.3.11") // Or another client engine for tests
+    testImplementation("io.ktor:ktor-client-apache:2.3.11") // Example: Apache client for tests
+    testImplementation("io.ktor:ktor-serialization-kotlinx-json:2.3.11") // For client-side JSON serialization
+
+    // JUnit 5 Dependencies
+    // Use kotlin-test-junit for Kotlin's JUnit 5 integration.
+    // It pulls in junit-jupiter-api and platform-engine dependencies.
+    testImplementation(kotlin("test-junit5")) // Use 'test-junit5' for explicit JUnit 5 integration
+
+    // Explicitly add junit-jupiter-params if needed for @ParameterizedTest
+    // (sometimes not pulled by test-junit5 by default)
+    testImplementation("org.junit.jupiter:junit-jupiter-params:5.10.0") // Ensure version matches your BOM if you use one for JUnit
+
+    // The JUnit Platform Engine is needed at runtime to execute tests.
+    // It's often pulled transitively by 'kotlin-test-junit5' but explicitly defining it as runtimeOnly is robust.
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.0") // Ensure version matches your BOM if you use one for JUnit
+    // End JUnit 5 Dependencies
 }
 
 tasks.test {
