@@ -72,32 +72,36 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
         }
     }
 
+    // handles GET requests to /health
     get("/health") {
         call.respondText("Fine & Dandy!")
     }
 
+    // handles POST requests to /conversion
     // File upload & conversion endpoint
     post("/conversion") {
-        // Handle File Upload from User
-        val multipart = call.receiveMultipart()
+        // vars needed in order to create final file output
         var tempInputFile: File? = null
         var outputFilePath: String? = null
         var inputFileName: String? = null
         var targetExtension: String? = null
 
         try {
+            // call.receiveMultipart() reads the incoming HTTP request body as a multipart stream.
+            val multipart = call.receiveMultipart()
+
             multipart.forEachPart { part ->
                 when (part) {
                     is PartData.FileItem -> {
                         inputFileName = part.originalFileName
                         // USE FFPROBE OR SIMILAR UTIL FUNCTION HERE
                         val fileExtension = inputFileName?.substringAfterLast(".", "")
-                        val contentType = part.contentType?.contentType
-                        val contentSubType = part.contentType?.contentSubtype
+                        val contentType = part.contentType?.contentType // Main part of MIME Type (ex. image)
+                        val contentSubType = part.contentType?.contentSubtype // Subtype of MIME Type (ex. jpeg)
 
                         println("Received file: $inputFileName, Type: $contentType/$contentSubType")
 
-                        // save uploaded file to temp location
+                        // create a temporary file on server to store uploaded content
                         tempInputFile = File.createTempFile(
                             "uploaded_", if (!fileExtension.isNullOrEmpty()) ".$fileExtension"
                             else null, tempFilesBaseDir
@@ -105,9 +109,11 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
                         // delete file on JVM exit (will add deletion logic after converion)
                         tempInputFile.deleteOnExit()
 
-                        // Use part.streamProvider().invoke() and java.io.InputStream.copyTo ---
-                        // This is a robust fallback when Ktor's content property/copyTo extension is not resolving.
-                        // Acknowledge streamProvider is deprecated, but used as a workaround.
+                        // copy the content of the uploaded file part to the temp file
+                        // part.streamProvider(): Returns a lambda that provides an InputStream.
+                        // .use { inputStream -> ... }: Ensures the InputStream is closed after use.
+                        // inputStream.copyTo(outputStream): Efficiently copies bytes from input to output.
+                        // streamProvider is deprecated, but used as a workaround.
                         @Suppress("DEPRECATION") // Suppress deprecation warning for streamProvider
                         tempInputFile.outputStream().use { outputStream ->
                             part.streamProvider().use { inputStream ->
@@ -117,6 +123,8 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
                         println("Saved uploaded file to: ${tempInputFile.absolutePath}")
                     }
 
+                    // handles form field data like when a user specifies
+                    // which type of file they want to convert theirs into
                     is PartData.FormItem -> {
                         // extract form data
                         if (part.name == "targetFormat") {
@@ -129,11 +137,12 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
                         println("Skipping unknown part type ${part.name}")
                     }
                 }
-                part.dispose()
+                part.dispose() // release resources allocated to that specific part, allowing it to be garbage collected
             }
 
+            // UPLOAD VALIDATION
             // validate that tempinput file isn't empty or null/exists,
-            // inputFileName isn't null & targetExtension isn't null
+            // inputFileName isn't null, & targetExtension isn't null
             if (tempInputFile == null || !tempInputFile.exists() || inputFileName == null || targetExtension == null) {
                 call.respond(HttpStatusCode.BadRequest, "Missing file or target format")
                 return@post
@@ -143,12 +152,18 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
             println("\n--- Analyzing Input File with FFprobe ---")
             val ffprobeData = analyzeFile(tempInputFile.absolutePath, ffprobeExecutablePath)
 
+            // If ffprobe analysis fails, send a 415 Unsupported Media Type response.
+            if (ffprobeData == null) {
+                call.respond(HttpStatusCode.UnsupportedMediaType, "Could not analyze input file type. Is it a valid media file?")
+                return@post
+            }
+
             // determine File Type and Instantiate the Correct Class
             // MAKE INTO ITS OWN FUNCTION
             val formatName = ffprobeData?.format?.formatName
             val hasVideoStream = ffprobeData?.streams?.any { it.codecType == "video" } == true
             val hasAudioStream = ffprobeData?.streams?.any { it.codecType == "audio" } == true
-            val fileExtension = tempInputFile.extension.lowercase() // Get the file extension
+            val fileExtension = tempInputFile.extension.lowercase() // use file extension as fallback check w ffprobe
 
             val fileToConvert: FFmpegConvertibleType? = when {
                 formatName?.contains("jpeg") == true || fileExtension == "jpeg" || fileExtension == "jpg" -> { // CHECK IF I NEED TO HAVE THIS ALSO CHECK IF IT CONTAINS jpg
@@ -231,7 +246,7 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
                 }
             }
 
-            // if file to convert after
+            // if no supported file type was created, send a 400 bad request
             if (fileToConvert == null) {
                 call.respond(HttpStatusCode.BadRequest, "Unsupported input file type detected.")
                 return@post
@@ -247,12 +262,13 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
             println("\n !!! Executing Conversion !!!")
             val conversionResult = fileToConvert.convertTo(outputFilePath!!, ffmpegExecutablePath)
 
+            // if conversion failed, send a 500 internal server error
             if (!conversionResult.isSuccess) {
                 call.respond(HttpStatusCode.InternalServerError, "File conversion failed: ${conversionResult.error}")
                 return@post
             }
 
-            // return the converted file
+            // setup file to be returned to the user
             println("\n Sending converted file to user")
             val convertedFile = File(outputFilePath)
 
@@ -262,14 +278,29 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
                 return@post
             }
 
+            // properly setup HTTP Headers (metadata about message being returned and its content)
+
+            // call.response.header(name, value): Sets an HTTP header.
+            // HttpHeaders.ContentDisposition: Standard header name for content disposition.
+            // ContentDisposition.Attachment: Value indicating the content should be downloaded.
+            // .withParameter(ContentDisposition.Parameters.FileName, convertedFile.name): Adds filename parameter.
+            // .toString(): Converts the Ktor object to the required String format for the header value.
             call.response.header(HttpHeaders.ContentDisposition, ContentDisposition.Attachment.withParameter(ContentDisposition.Parameters.FileName, convertedFile.name).toString())
+
+            // HttpHeaders.ContentType: Standard header name for content type.
+            // determineContentType(...).toString(): Gets the MIME type string (e.g., "image/png").
             call.response.header(HttpHeaders.ContentType, determineContentType(convertedFile.extension).toString())
+
+            // call.respondFile(file): Ktor function to send the content of a File as the response body.
+            // It automatically sets the status to 200 OK if successful.
             call.respondFile((convertedFile))
         } catch (e: Exception) {
             System.err.println("Error occurred during file conversion at /convert endpoint: \n${e.message}")
             e.printStackTrace()
             call.respond(HttpStatusCode.InternalServerError, "Unexpected error occurred during conversion: \n${e.message}")
         } finally {
+            // THIS BLOCK WILL ALWAYS EXECUTE
+            // Ensures temp files are deleted to manage privacy and disk space
             // clean up the temp input file
             tempInputFile?.delete()
             outputFilePath?.let {File(it).delete()}

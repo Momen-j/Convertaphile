@@ -23,24 +23,29 @@ private val FFPROBE_PATH: String = System.getenv("FFPROBE_PATH")
 // Temp directory for temporary uploaded & converted files
 private val TEMP_FILES_BASE_DIR: File = Files.createTempDirectory("convertaphile").toFile().apply{ deleteOnExit() }
 
+fun Application.module() {
+    // install KTOR plugins
+    install(ContentNegotiation) {
+        json()
+    }
+
+    // configure configuration object for application routes
+    val routeConfig = ConversionRouteConfig(
+        ffmpegExecutablePath = FFMPEG_PATH,
+        ffprobeExecutablePath = FFPROBE_PATH,
+        tempFilesBaseDir = TEMP_FILES_BASE_DIR
+    )
+
+    // use routing logic and call extension function from class to register routes
+    routing {
+        conversionRoutes(routeConfig)
+    }
+}
+
 // Ktor App Module
+// embeddedServer creates and starts an HTTP server
 fun main() {
     embeddedServer(Netty, port = 8080, host = "0.0.0.0") {
-        // install KTOR plugins
-        install(ContentNegotiation) {
-            json()
-        }
-
-        // configure configuration object for application routes
-        val routeConfig = ConversionRouteConfig(
-            ffmpegExecutablePath = FFMPEG_PATH,
-            ffprobeExecutablePath = FFPROBE_PATH,
-            tempFilesBaseDir = TEMP_FILES_BASE_DIR
-        )
-
-        // use routing logic and call extension function from class to register routes
-        routing {
-            conversionRoutes(routeConfig)
-        }
-    }.start(wait = true)
+        module()
+    }.start(wait = true) // start server & keep main thread alive to wait for requests
 }
