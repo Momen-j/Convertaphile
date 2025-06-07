@@ -25,6 +25,7 @@ dependencies {
     implementation("io.ktor:ktor-server-netty-jvm:2.3.11")
     implementation("io.ktor:ktor-server-content-negotiation-jvm:2.3.11")
     implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:2.3.11")
+    implementation("io.ktor:ktor-server-cors-jvm:2.3.11")
 
     // Ktor for file uploads
     implementation("io.ktor:ktor-server-host-common-jvm:2.3.11")

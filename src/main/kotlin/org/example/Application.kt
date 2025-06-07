@@ -1,12 +1,15 @@
 package org.example
 
+import io.ktor.http.HttpHeaders
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.routing.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.serialization.kotlinx.json.*
+import io.ktor.server.plugins.cors.routing.CORS
 import org.example.routes.conversionRoutes
+import io.ktor.http.*
 
 // import routing module
 import org.example.utilities.ConversionRouteConfig
@@ -27,6 +30,17 @@ fun Application.module() {
     // install KTOR plugins
     install(ContentNegotiation) {
         json()
+    }
+
+    // Add CORS support for frontend-backend communication
+    install(CORS) {
+        allowMethod(HttpMethod.Options)
+        allowMethod(HttpMethod.Post)
+        allowMethod(HttpMethod.Get)
+        allowHeader(HttpHeaders.AccessControlAllowOrigin)
+        allowHeader(HttpHeaders.ContentType)
+        allowCredentials = true
+        anyHost() // For development only - restrict this in production
     }
 
     // configure configuration object for application routes
