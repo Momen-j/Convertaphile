@@ -25,6 +25,7 @@ import java.util.UUID // to generate unique filenames
 import java.nio.file.Files // for temp dir creation
 
 import org.example.utilities.ConversionRouteConfig
+import org.example.utilities.ConversionStatsResponse
 import org.example.video.AVI
 import org.example.video.MKV
 import org.example.video.MOV
@@ -40,6 +41,7 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
     val ffmpegExecutablePath = config.ffmpegExecutablePath
     val ffprobeExecutablePath = config.ffprobeExecutablePath
     val tempFilesBaseDir = config.tempFilesBaseDir
+    val redisClient = config.jedisPool
 
     // either make into an exportable separate util function, use ffprobe (why am i not???), or make a service class
     // for time being we are using separate util function defined within extension function
@@ -293,7 +295,44 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
 
             // call.respondFile(file): Ktor function to send the content of a File as the response body.
             // It automatically sets the status to 200 OK if successful.
-            call.respondFile((convertedFile))
+            // call.respondFile((convertedFile))
+
+            // Create a permanent storage directory (separate from temp files)
+            val permanentStorageDir = File(tempFilesBaseDir.parent, "converted_files")
+            permanentStorageDir.mkdirs()
+
+            // Generate a unique ID for this conversion
+            val conversionId = UUID.randomUUID().toString()
+            val storedFileName = "${conversionId}_${inputFileName?.substringBeforeLast(".")}.${targetExtension}"
+            val permanentFilePath = File(permanentStorageDir, storedFileName)
+
+            // Move the converted file to permanent storage
+            convertedFile.copyTo(permanentFilePath, overwrite = true)
+
+            // Get file metadata
+            val fileSizeBytes = permanentFilePath.length()
+            val fileSizeMB = fileSizeBytes / (1024.0 * 1024.0)
+
+            // Redis tracking - increment conversion statistics
+            redisClient.hincrby("conversion_stats", "total_files", 1)
+            redisClient.hincrbyfloat("conversion_stats", "total_size_mb", fileSizeMB)
+
+            // Return conversion metadata instead of the file
+            // Return conversion metadata instead of the file
+            call.respond(ConversionResponse(
+                conversionId = conversionId,
+                originalFileName = inputFileName ?: "unknown",
+                convertedFileName = storedFileName,
+                targetFormat = targetExtension,
+                fileSizeBytes = fileSizeBytes,
+                fileSizeMB = String.format("%.2f", fileSizeMB),
+                downloadUrl = "/download/${conversionId}",
+                message = "File converted successfully"
+            ))
+
+            println("✅ File stored at: ${permanentFilePath.absolutePath}")
+
+
         } catch (e: Exception) {
             System.err.println("Error occurred during file conversion at /convert endpoint: \n${e.message}")
             e.printStackTrace()
@@ -306,4 +345,94 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
             outputFilePath?.let {File(it).delete()}
             println("Temp file cleanup completed")
         }
-    }}
+    }
+
+    get("/download/{conversionId}") {
+        val conversionId = call.parameters["conversionId"]
+
+        if (conversionId.isNullOrEmpty()) {
+            call.respond(HttpStatusCode.BadRequest, "Missing conversion ID")
+            return@get
+        }
+
+        try {
+            // Create path to permanent storage directory
+            val permanentStorageDir = File(tempFilesBaseDir.parent, "converted_files")
+
+            // Find the file with this conversion ID
+            val files = permanentStorageDir.listFiles { file ->
+                file.name.startsWith("${conversionId}_")
+            }
+
+            if (files.isNullOrEmpty()) {
+                call.respond(HttpStatusCode.NotFound, "File not found or has expired")
+                return@get
+            }
+
+            val convertedFile = files.first()
+
+            if (!convertedFile.exists() || convertedFile.length() == 0L) {
+                call.respond(HttpStatusCode.NotFound, "File not found or is empty")
+                return@get
+            }
+
+            // Set proper headers for file download
+            call.response.header(
+                HttpHeaders.ContentDisposition,
+                ContentDisposition.Attachment.withParameter(
+                    ContentDisposition.Parameters.FileName,
+                    convertedFile.name.substringAfter("_") // Remove the UUID prefix
+                ).toString()
+            )
+
+            call.response.header(
+                HttpHeaders.ContentType,
+                determineContentType(convertedFile.extension).toString()
+            )
+
+            // Track download in Redis
+            redisClient.hincrby("conversion_stats", "total_downloads", 1)
+
+            // Send the file
+            call.respondFile(convertedFile)
+
+            println("✅ File downloaded: ${convertedFile.name}")
+
+            // CLEANUP: Delete the file after successful download
+            try {
+                if (convertedFile.delete()) {
+                    println("🗑️ Cleaned up downloaded file: ${convertedFile.name}")
+                } else {
+                    System.err.println("⚠️ Failed to delete file after download: ${convertedFile.name}")
+                }
+            } catch (deleteException: Exception) {
+                System.err.println("⚠️ Error deleting file after download: ${deleteException.message}")
+            }
+
+        } catch (e: Exception) {
+            System.err.println("Error serving download: ${e.message}")
+            e.printStackTrace()
+            call.respond(HttpStatusCode.InternalServerError, "Error retrieving file")
+        }
+    }
+
+    get("/stats") {
+        try {
+            val stats = redisClient.hgetall("conversion_stats")
+
+            val response = ConversionStatsResponse(
+                totalFiles = stats["total_files"]?.toLongOrNull() ?: 0L,
+                totalSizeMB = stats["total_size_mb"]?.toDoubleOrNull() ?: 0.0,
+                totalDownloads = stats["total_downloads"]?.toLongOrNull() ?: 0L,
+                message = "Statistics retrieved successfully"
+            )
+
+            call.respond(response)
+
+        } catch (e: Exception) {
+            System.err.println("Error retrieving stats: ${e.message}")
+            e.printStackTrace()
+            call.respond(HttpStatusCode.InternalServerError, "Error retrieving statistics")
+        }
+    }
+}

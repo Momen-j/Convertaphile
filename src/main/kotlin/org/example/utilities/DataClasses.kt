@@ -3,6 +3,7 @@ package org.example.utilities
 // Import kotlinx.serialization related classes
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import redis.clients.jedis.JedisPool
 import java.io.File
 
 // Data class to encapsulate the result of an external command execution.
@@ -19,7 +20,8 @@ data class ConversionResult(
 data class ConversionRouteConfig(
     val ffmpegExecutablePath: String,
     val ffprobeExecutablePath: String,
-    val tempFilesBaseDir: File
+    val tempFilesBaseDir: File,
+    val jedisPool: JedisPool
 )
 
 // --- Data classes to match ffprobe JSON structure (simplified) ---
@@ -54,3 +56,25 @@ data class Stream(
     // Add other stream-level fields if needed (e.g., bit_rate, sample_rate, channels)
 )
 // --- End of ffprobe JSON data classes ---
+
+// API Response from stored redis data
+@Serializable
+data class ConversionStatsResponse(
+    val totalFiles: Long,
+    val totalSizeMB: Double,
+    val totalDownloads: Long,
+    val message: String
+)
+
+// response from conversion endpoint on metadata about converted file
+@Serializable
+data class ConversionResponse(
+    val conversionId: String,
+    val originalFileName: String,
+    val convertedFileName: String,
+    val targetFormat: String,
+    val fileSizeBytes: Long,
+    val fileSizeMB: String,
+    val downloadUrl: String,
+    val message: String
+)

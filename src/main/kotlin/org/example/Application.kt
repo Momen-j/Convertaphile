@@ -17,6 +17,9 @@ import org.example.utilities.ConversionRouteConfig
 import java.io.File
 import java.nio.file.Files
 
+// redis import
+import redis.clients.jedis.JedisPool
+
 // Config constants to be passed to routing module
 private val FFMPEG_PATH: String = System.getenv("FFMPEG_PATH")
     ?: "C:\\ffmpeg\\ffmpeg-7.0.2-full_build\\ffmpeg-7.0.2-full_build\\bin\\ffmpeg.exe"
@@ -25,6 +28,10 @@ private val FFPROBE_PATH: String = System.getenv("FFPROBE_PATH")
 
 // Temp directory for temporary uploaded & converted files
 private val TEMP_FILES_BASE_DIR: File = Files.createTempDirectory("convertaphile").toFile().apply{ deleteOnExit() }
+
+// redis setup
+private val REDIS_HOST: String = System.getenv("REDIS_HOST") ?: "localhost"
+private val REDIS_PORT: Int = System.getenv("REDIS_PORT")?.toIntOrNull() ?: 6379
 
 fun Application.module() {
     // install KTOR plugins
@@ -43,11 +50,15 @@ fun Application.module() {
         anyHost() // For development only - restrict this in production
     }
 
+    // create redis connection pool
+    val jedisPool = JedisPool(REDIS_HOST, REDIS_PORT)
+
     // configure configuration object for application routes
     val routeConfig = ConversionRouteConfig(
         ffmpegExecutablePath = FFMPEG_PATH,
         ffprobeExecutablePath = FFPROBE_PATH,
-        tempFilesBaseDir = TEMP_FILES_BASE_DIR
+        tempFilesBaseDir = TEMP_FILES_BASE_DIR,
+        jedisPool = jedisPool,
     )
 
     // use routing logic and call extension function from class to register routes

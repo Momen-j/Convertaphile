@@ -37,6 +37,9 @@ dependencies {
     // Add this for ByteReadChannel and IO operations
     implementation("io.ktor:ktor-io-jvm:2.3.11")
 
+    // Redis Implementation
+    implementation("redis.clients:jedis:5.1.0")
+
     // existing kotlinx.serialization-json dependency
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
 
