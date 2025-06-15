@@ -20,6 +20,7 @@ import org.junit.jupiter.params.provider.MethodSource
 import org.example.utilities.ConversionRouteConfig
 import org.example.routes.conversionRoutes
 import org.example.utilities.analyzeFile
+import redis.clients.jedis.JedisPool
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
@@ -73,6 +74,7 @@ class ApiIntegrationTest {
         private lateinit var ffmpegExecutablePath: String
         private lateinit var ffprobeExecutablePath: String
         private lateinit var testFilesDir: File // Temporary directory for test resources for API tests
+        private lateinit var jedisPool: JedisPool
 
         @BeforeAll
         @JvmStatic
@@ -197,7 +199,8 @@ class ApiIntegrationTest {
             val routeConfig = ConversionRouteConfig(
                 ffmpegExecutablePath = ffmpegExecutablePath,
                 ffprobeExecutablePath = ffprobeExecutablePath,
-                testFilesDir
+                testFilesDir,
+                jedisPool
             )
 
             // install plugins for routes
@@ -230,7 +233,8 @@ class ApiIntegrationTest {
                 val routeConfig = ConversionRouteConfig(
                     ffmpegExecutablePath = ffmpegExecutablePath,
                     ffprobeExecutablePath = ffprobeExecutablePath,
-                    testFilesDir
+                    testFilesDir,
+                    jedisPool
                 )
 
                 // install plugins for routes
@@ -297,11 +301,11 @@ class ApiIntegrationTest {
             assertTrue(responseBytes.isNotEmpty(), "Response body for converted file is empty")
         }
 
-    // TODO: Add tests for error cases (e.g., missing file, unsupported format, FFmpeg failure)
+    // TODO: Add tests for error cases (e.g. FFmpeg failure)
     @Test
     fun testConversionBadRequestMissingFile() = testApplication {
         application {
-            val routeConfig = ConversionRouteConfig(ffmpegExecutablePath, ffprobeExecutablePath, testFilesDir)
+            val routeConfig = ConversionRouteConfig(ffmpegExecutablePath, ffprobeExecutablePath, testFilesDir, jedisPool)
             install(io.ktor.server.plugins.contentnegotiation.ContentNegotiation) { json() }
             routing { conversionRoutes(routeConfig) }
         }
@@ -322,7 +326,7 @@ class ApiIntegrationTest {
     @Test
     fun testConversionBadRequestMissingTargetFormat() = testApplication {
         application {
-            val routeConfig = ConversionRouteConfig(ffmpegExecutablePath, ffprobeExecutablePath, testFilesDir)
+            val routeConfig = ConversionRouteConfig(ffmpegExecutablePath, ffprobeExecutablePath, testFilesDir, jedisPool)
             install(io.ktor.server.plugins.contentnegotiation.ContentNegotiation) { json() }
             routing { conversionRoutes(routeConfig) }
         }

@@ -16,9 +16,13 @@ import org.example.utilities.ConversionRouteConfig
 
 import java.io.File
 import java.nio.file.Files
+import java.util.concurrent.TimeUnit
 
 // redis import
 import redis.clients.jedis.JedisPool
+
+// Coroutines imports for cleanup scheduler
+import kotlinx.coroutines.*
 
 // Config constants to be passed to routing module
 private val FFMPEG_PATH: String = System.getenv("FFMPEG_PATH")
@@ -32,6 +36,80 @@ private val TEMP_FILES_BASE_DIR: File = Files.createTempDirectory("convertaphile
 // redis setup
 private val REDIS_HOST: String = System.getenv("REDIS_HOST") ?: "localhost"
 private val REDIS_PORT: Int = System.getenv("REDIS_PORT")?.toIntOrNull() ?: 6379
+
+// file cleanup config
+private val FILE_EXPIRATION_HOURS: Long = System.getenv("FILE_EXPIRATION_HOURS")?.toLongOrNull() ?: 2L
+private val CLEANUP_INTERVAL_HOURS: Long = System.getenv("CLEANUP_INTERVAL_HOURS")?.toLongOrNull() ?: 1L
+
+/**
+ * Starts a background coroutine that periodically cleans up expired files
+ */
+suspend fun startFileCleanupScheduler(tempFilesBaseDir: File) {
+    // Use GlobalScope for application-lifetime coroutines
+    GlobalScope.launch(Dispatchers.IO) {
+        println("🧹 File cleanup scheduler started - checking every $CLEANUP_INTERVAL_HOURS hour(s)")
+    }
+
+    while (true) {
+        try {
+            delay(TimeUnit.HOURS.toMillis(CLEANUP_INTERVAL_HOURS))
+            cleanupExpiredFiles(tempFilesBaseDir)
+        } catch (e: Exception) {
+            System.err.println("Error in cleanup scheduler: ${e.message}")
+            e.printStackTrace()
+        }
+    }
+}
+
+/**
+ * Cleans up files older than FILE_EXPIRATION_HOURS
+ * Creates a cutoff time using current time - FILE_EXPIRATION_HOURS
+ * Any file created before that cutoff time is auto deleted
+ */
+fun cleanupExpiredFiles(tempFilesBaseDir: File) {
+    try {
+        val permanentStorageDir = File(tempFilesBaseDir.parent, "converted_files")
+
+        if (!permanentStorageDir.exists()) {
+            println("🧹 Storage directory doesn't exist yet, skipping cleanup")
+            return
+        }
+
+        val expirationTime = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(FILE_EXPIRATION_HOURS)
+        var cleanedCount = 0
+        var totalSizeCleaned = 0L
+
+        permanentStorageDir.listFiles()?.forEach { file ->
+            if (file.lastModified() < expirationTime) {
+                try {
+                    val fileSize = file.length()
+
+                    // Delete the file (Redis stats are preserved)
+                    if (file.delete()) {
+                        cleanedCount++
+                        totalSizeCleaned += fileSize
+                        println("🗑️ Cleaned up expired file: ${file.name}")
+                    } else {
+                        System.err.println("⚠️ Failed to delete expired file: ${file.name}")
+                    }
+                } catch (e: Exception) {
+                    System.err.println("⚠️ Error processing file ${file.name}: ${e.message}")
+                }
+            }
+        }
+
+        if (cleanedCount > 0) {
+            val sizeMB = totalSizeCleaned / (1024.0 * 1024.0)
+            println("🧹 Cleanup completed: Removed $cleanedCount files (${String.format("%.2f", sizeMB)} MB)")
+        } else {
+            println("🧹 Cleanup completed: No expired files found")
+        }
+
+    } catch (e: Exception) {
+        System.err.println("Error during file cleanup: ${e.message}")
+        e.printStackTrace()
+    }
+}
 
 fun Application.module() {
     // install KTOR plugins
@@ -60,6 +138,11 @@ fun Application.module() {
         tempFilesBaseDir = TEMP_FILES_BASE_DIR,
         jedisPool = jedisPool,
     )
+
+    // Start the file cleanup scheduler
+    GlobalScope.launch {
+        startFileCleanupScheduler(TEMP_FILES_BASE_DIR)
+    }
 
     // use routing logic and call extension function from class to register routes
     routing {
