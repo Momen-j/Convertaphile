@@ -32,7 +32,10 @@ import org.example.video.MOV
 import org.example.video.MP4
 import org.example.video.WEBM
 import org.example.video.WMV
+import org.slf4j.LoggerFactory
 import java.io.InputStream
+
+private val logger = LoggerFactory.getLogger("org.example.utilities.ConversionRoutes")
 
 // extension function on Routing Class
 // handles all conversion related endpoints
@@ -101,7 +104,7 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
                         val contentType = part.contentType?.contentType // Main part of MIME Type (ex. image)
                         val contentSubType = part.contentType?.contentSubtype // Subtype of MIME Type (ex. jpeg)
 
-                        println("Received file: $inputFileName, Type: $contentType/$contentSubType")
+                        logger.info("Received file: $inputFileName, Type: $contentType/$contentSubType")
 
                         // create a temporary file on server to store uploaded content
                         tempInputFile = File.createTempFile(
@@ -122,7 +125,7 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
                                 inputStream.copyTo(outputStream)
                             }
                         }
-                        println("Saved uploaded file to: ${tempInputFile.absolutePath}")
+                        logger.info("Saved uploaded file to: {}", tempInputFile.absolutePath)
                     }
 
                     // handles form field data like when a user specifies
@@ -131,12 +134,12 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
                         // extract form data
                         if (part.name == "targetFormat") {
                             targetExtension = part.value.lowercase()
-                            println("Requested target format: $targetExtension")
+                            logger.info("Requested target format: {}", targetExtension)
                         }
                     }
 
                     else -> {
-                        println("Skipping unknown part type ${part.name}")
+                        logger.info("Skipping unknown part type {}", part.name)
                     }
                 }
                 part.dispose() // release resources allocated to that specific part, allowing it to be garbage collected
@@ -151,7 +154,6 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
             }
 
             // analyze the file with ffprobe to determine actual type
-            println("\n--- Analyzing Input File with FFprobe ---")
             val ffprobeData = analyzeFile(tempInputFile.absolutePath, ffprobeExecutablePath)
 
             // If ffprobe analysis fails, send a 415 Unsupported Media Type response.
@@ -169,61 +171,46 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
 
             val fileToConvert: FFmpegConvertibleType? = when {
                 formatName?.contains("jpeg") == true || fileExtension == "jpeg" || fileExtension == "jpg" -> { // CHECK IF I NEED TO HAVE THIS ALSO CHECK IF IT CONTAINS jpg
-                    println("\n~~ Detected file type: .JPEG ~~")
                     JPEG(tempInputFile.absolutePath)
                 }
                 formatName?.contains("png") == true || fileExtension == "png"-> {
-                    println("\n~~ Detected file type: .PNG ~~")
                     PNG(tempInputFile.absolutePath)
                 }
                 formatName?.contains("webp") == true || fileExtension == "webp" -> {
-                    println("\n~~ Detected file type: .WEBP ~~")
                     WEBP(tempInputFile.absolutePath)
                 }
                 formatName?.contains("gif") == true || fileExtension == "gif" -> {
-                    println("\n~~ Detected file type: .GIF ~~")
                     GIF(tempInputFile.absolutePath)
                 }
                 formatName?.contains("avif") == true || fileExtension == "avif" -> {
-                    println("\n~~ Detected file type: .AVIF ~~")
                     AVIF(tempInputFile.absolutePath)
                 }
                 formatName?.contains("bmp") == true || fileExtension == "bmp" -> {
-                    println("\n~~ Detected file type: .BMP ~~")
                     BMP(tempInputFile.absolutePath)
                 }
                 formatName?.contains("tiff") == true || fileExtension == "tiff" -> {
-                    println("\n~~ Detected file type: .TIFF ~~")
                     TIFF(tempInputFile.absolutePath)
                 }
                 hasVideoStream -> {
-                    println("\n~~ Detected a VIDEO file")
                     if (formatName?.contains("mp4") == true || fileExtension == "mp4") {
-                        println("\n~~ Detected file type: .MP4 ~~")
                         MP4(tempInputFile.absolutePath)
                     } else if (formatName?.contains("mkv") == true) {
-                        println("\n~~ Detected file type: .MKV ~~")
                         MKV(tempInputFile.absolutePath)
                     } else if (formatName?.contains("mov") == true) {
-                        println("\n~~ Detected file type: .MOV ~~")
                         MOV(tempInputFile.absolutePath)
                     } else if (formatName?.contains("avi") == true) {
-                        println("\n~~ Detected file type: .AVI ~~")
                         AVI(tempInputFile.absolutePath)
                     } else if (formatName?.contains("webm") == true) {
-                        println("\n~~ Detected file type: .WEBM ~~")
                         WEBM(tempInputFile.absolutePath)
                     } else if (formatName?.contains("wmv") == true) {
-                        println("\n~~ Detected file type: .WMV ~~")
                         WMV(tempInputFile.absolutePath)
                     } else {
                         // Fallback for other video containers, or throw error if not supported
-                        System.err.println("Detected unsupported video container: $formatName")
+                        logger.error("Detected unsupported video container: {}", formatName)
                         null
                     }
                 }
                 hasAudioStream -> {
-                    println("\n~~ Detected an AUDIO file")
                     if (formatName?.contains("mp3") == true || ffprobeData.streams?.any { it.codecType == "audio" && it.codecName == "mp3" } == true) {
                         MP3(tempInputFile.absolutePath)
                     } else if (formatName?.contains("aac") == true || ffprobeData.streams?.any { it.codecType == "audio" && it.codecName == "aac" } == true) {
@@ -238,12 +225,12 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
                         WAV(tempInputFile.absolutePath)
                     } else {
                         // Fallback for other audio containers, or throw error if not supported
-                        System.err.println("Detected unsupported audio container: $formatName")
+                        logger.error("Detected unsupported audio container: {}", formatName)
                         null
                     }
                 }
                 else -> {
-                    System.err.println("!! Detected unknown/unsupported file type !!")
+                    logger.error("!! Detected unknown/unsupported file type !!")
                     null
                 }
             }
@@ -261,7 +248,6 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
             outputFilePath = File(outputDir, outputFileName).absolutePath
 
             // execute conversion
-            println("\n !!! Executing Conversion !!!")
             val conversionResult = fileToConvert.convertTo(outputFilePath!!, ffmpegExecutablePath)
 
             // if conversion failed, send a 500 internal server error
@@ -271,7 +257,6 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
             }
 
             // setup file to be returned to the user
-            println("\n Sending converted file to user")
             val convertedFile = File(outputFilePath)
 
             // if the converted file doesn't exist/the length of file is 0
@@ -287,11 +272,11 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
             // ContentDisposition.Attachment: Value indicating the content should be downloaded.
             // .withParameter(ContentDisposition.Parameters.FileName, convertedFile.name): Adds filename parameter.
             // .toString(): Converts the Ktor object to the required String format for the header value.
-            call.response.header(HttpHeaders.ContentDisposition, ContentDisposition.Attachment.withParameter(ContentDisposition.Parameters.FileName, convertedFile.name).toString())
+            // call.response.header(HttpHeaders.ContentDisposition, ContentDisposition.Attachment.withParameter(ContentDisposition.Parameters.FileName, convertedFile.name).toString())
 
             // HttpHeaders.ContentType: Standard header name for content type.
             // determineContentType(...).toString(): Gets the MIME type string (e.g., "image/png").
-            call.response.header(HttpHeaders.ContentType, determineContentType(convertedFile.extension).toString())
+            //call.response.header(HttpHeaders.ContentType, determineContentType(convertedFile.extension).toString())
 
             // call.respondFile(file): Ktor function to send the content of a File as the response body.
             // It automatically sets the status to 200 OK if successful.
@@ -318,7 +303,6 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
             redisClient.hincrbyfloat("conversion_stats", "total_size_mb", fileSizeMB)
 
             // Return conversion metadata instead of the file
-            // Return conversion metadata instead of the file
             call.respond(ConversionResponse(
                 conversionId = conversionId,
                 originalFileName = inputFileName ?: "unknown",
@@ -330,12 +314,11 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
                 message = "File converted successfully"
             ))
 
-            println("✅ File stored at: ${permanentFilePath.absolutePath}")
+            logger.info("Successfully sent converted file metadata")
 
 
         } catch (e: Exception) {
-            System.err.println("Error occurred during file conversion at /convert endpoint: \n${e.message}")
-            e.printStackTrace()
+            logger.error("Error occurred during file conversion at /conversion endpoint: \n{}", e.message, e)
             call.respond(HttpStatusCode.InternalServerError, "Unexpected error occurred during conversion: \n${e.message}")
         } finally {
             // THIS BLOCK WILL ALWAYS EXECUTE
@@ -343,7 +326,6 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
             // clean up the temp input file
             tempInputFile?.delete()
             outputFilePath?.let {File(it).delete()}
-            println("Temp file cleanup completed")
         }
     }
 
@@ -395,23 +377,22 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
 
             // Send the file
             call.respondFile(convertedFile)
-
-            println("✅ File downloaded: ${convertedFile.name}")
+            logger.info("Successfully sent converted file to user")
 
             // CLEANUP: Delete the file after successful download
             try {
                 if (convertedFile.delete()) {
-                    println("🗑️ Cleaned up downloaded file: ${convertedFile.name}")
+                    // move on with if statement
+                    logger.info("Deleted converted file data for id {}", conversionId)
                 } else {
-                    System.err.println("⚠️ Failed to delete file after download: ${convertedFile.name}")
+                    logger.error("️ Failed to delete file after download: {}", convertedFile.name)
                 }
             } catch (deleteException: Exception) {
-                System.err.println("⚠️ Error deleting file after download: ${deleteException.message}")
+                logger.error("️⚠️ Error deleting file after download: {}", deleteException.message)
             }
 
         } catch (e: Exception) {
-            System.err.println("Error serving download: ${e.message}")
-            e.printStackTrace()
+            logger.error("️Error serving download: {}", e.message, e)
             call.respond(HttpStatusCode.InternalServerError, "Error retrieving file")
         }
     }
@@ -430,8 +411,7 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
             call.respond(response)
 
         } catch (e: Exception) {
-            System.err.println("Error retrieving stats: ${e.message}")
-            e.printStackTrace()
+            logger.error("️Error retrieving stats: {}", e.message, e)
             call.respond(HttpStatusCode.InternalServerError, "Error retrieving statistics")
         }
     }

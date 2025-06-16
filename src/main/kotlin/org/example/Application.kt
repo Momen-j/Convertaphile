@@ -23,6 +23,7 @@ import redis.clients.jedis.JedisPool
 
 // Coroutines imports for cleanup scheduler
 import kotlinx.coroutines.*
+import org.slf4j.LoggerFactory
 
 // Config constants to be passed to routing module
 private val FFMPEG_PATH: String = System.getenv("FFMPEG_PATH")
@@ -41,13 +42,16 @@ private val REDIS_PORT: Int = System.getenv("REDIS_PORT")?.toIntOrNull() ?: 6379
 private val FILE_EXPIRATION_HOURS: Long = System.getenv("FILE_EXPIRATION_HOURS")?.toLongOrNull() ?: 2L
 private val CLEANUP_INTERVAL_HOURS: Long = System.getenv("CLEANUP_INTERVAL_HOURS")?.toLongOrNull() ?: 1L
 
+private val logger = LoggerFactory.getLogger("org.example.utilities.Application")
+
+
 /**
  * Starts a background coroutine that periodically cleans up expired files
  */
 suspend fun startFileCleanupScheduler(tempFilesBaseDir: File) {
     // Use GlobalScope for application-lifetime coroutines
     GlobalScope.launch(Dispatchers.IO) {
-        println("🧹 File cleanup scheduler started - checking every $CLEANUP_INTERVAL_HOURS hour(s)")
+        logger.info("🧹 File cleanup scheduler started - checking every {} hour(s)", CLEANUP_INTERVAL_HOURS)
     }
 
     while (true) {
@@ -55,8 +59,7 @@ suspend fun startFileCleanupScheduler(tempFilesBaseDir: File) {
             delay(TimeUnit.HOURS.toMillis(CLEANUP_INTERVAL_HOURS))
             cleanupExpiredFiles(tempFilesBaseDir)
         } catch (e: Exception) {
-            System.err.println("Error in cleanup scheduler: ${e.message}")
-            e.printStackTrace()
+            logger.error("Error in cleanup scheduler: {}", e.message, e)
         }
     }
 }
@@ -71,7 +74,7 @@ fun cleanupExpiredFiles(tempFilesBaseDir: File) {
         val permanentStorageDir = File(tempFilesBaseDir.parent, "converted_files")
 
         if (!permanentStorageDir.exists()) {
-            println("🧹 Storage directory doesn't exist yet, skipping cleanup")
+            logger.info("🧹 Storage directory doesn't exist yet, skipping cleanup")
             return
         }
 
@@ -88,26 +91,25 @@ fun cleanupExpiredFiles(tempFilesBaseDir: File) {
                     if (file.delete()) {
                         cleanedCount++
                         totalSizeCleaned += fileSize
-                        println("🗑️ Cleaned up expired file: ${file.name}")
+                        logger.info("🗑️ Cleaned up expired file: ${file.name}")
                     } else {
-                        System.err.println("⚠️ Failed to delete expired file: ${file.name}")
+                        logger.error("⚠️ Failed to delete expired file: {}", file.name)
                     }
                 } catch (e: Exception) {
-                    System.err.println("⚠️ Error processing file ${file.name}: ${e.message}")
+                    logger.error("️ Error processing file {}: {}", file.name, e.message)
                 }
             }
         }
 
         if (cleanedCount > 0) {
             val sizeMB = totalSizeCleaned / (1024.0 * 1024.0)
-            println("🧹 Cleanup completed: Removed $cleanedCount files (${String.format("%.2f", sizeMB)} MB)")
+            logger.info("🧹 Cleanup completed: Removed {} files ({} MB)", cleanedCount, String.format("%.2f", sizeMB))
         } else {
-            println("🧹 Cleanup completed: No expired files found")
+            logger.info("🧹 Cleanup completed: No expired files found")
         }
 
     } catch (e: Exception) {
-        System.err.println("Error during file cleanup: ${e.message}")
-        e.printStackTrace()
+        logger.error("Error during file cleanup: {}", e.message, e)
     }
 }
 

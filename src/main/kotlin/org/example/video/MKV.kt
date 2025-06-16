@@ -113,21 +113,21 @@ class MKV(override val inputFilePath: String): FFmpegConvertibleType {
                 command.add("-vn")
             }
             else -> {
-                System.err.println("No specific codecs defined for .$targetExtension when converting from MKV. Attempting default conversion.")
+                logger.error("No specific codecs defined for .{} when converting from MKV. Attempting default conversion.", targetExtension)
             }
         }
 
         command.add(outputFilePath)
 
-        println("Converting $inputFilePath to $outputFilePath using custom MKV command: ${command.joinToString(" ")}")
+        logger.info("Converting {} to {} using custom AVI command: {}", inputFilePath, outputFilePath, command.joinToString(" "))
 
         val result = executeCommand(command)
 
         if (result.isSuccess) {
-            println("Successfully converted $inputFilePath to $outputFilePath")
+            logger.info("Successfully converted {} to {}", inputFilePath, outputFilePath)
         } else {
-            System.err.println("Failed to convert $inputFilePath to $outputFilePath. Exit Code: ${result.exitCode}")
-            System.err.println("FFmpeg Error Output:\n${result.error}")
+            logger.error("Failed to convert {} to {}. Exit Code: {}", inputFilePath, outputFilePath, result.exitCode)
+            logger.error("FFmpeg Error Output:\n{}", result.error)
         }
         return result
     }

@@ -3,6 +3,9 @@ package org.example.utilities
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.util.concurrent.TimeUnit
+import org.slf4j.LoggerFactory
+
+private val logger = LoggerFactory.getLogger("org.example.utilities.executeCommand")
 
 // Function gives arguments to FFmpeg to execute based on input & output file type
 // Executes an external command using ProcessBuilder
@@ -82,7 +85,7 @@ fun executeCommand(command: List<String>, timeoutSeconds: Long = 60): Conversion
 
     } catch (e: Exception) {
         // catch any exceptions that may have occured
-        System.err.println("Exception during FFmpeg Command Execution: ${e.message}")
+        logger.error("Exception during FFmpeg Command Execution {}", e.message)
 
         return ConversionResult(
             false,

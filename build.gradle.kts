@@ -64,6 +64,14 @@ dependencies {
     // It's often pulled transitively by 'kotlin-test-junit5' but explicitly defining it as runtimeOnly is robust.
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.0") // Ensure version matches your BOM if you use one for JUnit
     // End JUnit 5 Dependencies
+
+    // SLF4J API (required for logging calls)
+    implementation("org.slf4j:slf4j-api:2.0.13") // Use the latest stable version
+
+    // Logback Classic (SLF4J implementation and core)
+    implementation("ch.qos.logback:logback-classic:1.5.13") // Use the latest stable version
+    // Logback Core (dependency of logback-classic)
+    implementation("ch.qos.logback:logback-core:1.5.13")
 }
 
 tasks.test {

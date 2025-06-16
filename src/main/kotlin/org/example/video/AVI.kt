@@ -1,11 +1,18 @@
 package org.example.video
 
+import org.example.photo.GIF
 import org.example.utilities.ConversionResult
 import org.example.utilities.FFmpegConvertibleType
 import org.example.utilities.executeCommand
+import org.slf4j.LoggerFactory
 import java.io.File
 
 class AVI(override val inputFilePath: String): FFmpegConvertibleType {
+    // define companion object for logger that is a single instance shared across all AVI instances
+    companion object {
+        private val logger = LoggerFactory.getLogger(AVI::class.java)
+    }
+
     /**
      * Overrides the default convertTo implementation for AVI files.
      * Specifies appropriate video and audio codecs based on the output format.
@@ -112,21 +119,21 @@ class AVI(override val inputFilePath: String): FFmpegConvertibleType {
                 command.add("-vn")
             }
             else -> {
-                System.err.println("No specific codecs defined for .$targetExtension when converting from AVI. Attempting default conversion.")
+                logger.error("No specific codecs defined for .{} when converting from AVI. Attempting default conversion.", targetExtension)
             }
         }
 
         command.add(outputFilePath)
 
-        println("Converting $inputFilePath to $outputFilePath using custom AVI command: ${command.joinToString(" ")}")
+        logger.info("Converting {} to {} using custom AVI command: {}", inputFilePath, outputFilePath, command.joinToString(" "))
 
         val result = executeCommand(command)
 
         if (result.isSuccess) {
-            println("Successfully converted $inputFilePath to $outputFilePath")
+            logger.info("Successfully converted {} to {}", inputFilePath, outputFilePath)
         } else {
-            System.err.println("Failed to convert $inputFilePath to $outputFilePath. Exit Code: ${result.exitCode}")
-            System.err.println("FFmpeg Error Output:\n${result.error}")
+            logger.error("Failed to convert {} to {}. Exit Code: {}", inputFilePath, outputFilePath, result.exitCode)
+            logger.error("FFmpeg Error Output:\n{}", result.error)
         }
         return result
     }

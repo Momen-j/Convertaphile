@@ -1,11 +1,15 @@
 package org.example.utilities
 
 import kotlinx.serialization.json.Json
-// import kotlinx.serialization.json.JsonDecodingException ADD LATER
+// import kotlinx.serialization.json.JsonDecodingException // Add this import for more specific error handling
+import org.slf4j.LoggerFactory
 
 // --- Create a single, reusable Json instance ---
-// This instance is created once when the application starts.
 private val json = Json { ignoreUnknownKeys = true }
+
+// Get a logger instance for this file (or a specific utility logger)
+// Since this is a top-level function in a file, we can define a logger directly.
+private val logger = LoggerFactory.getLogger("org.example.utilities.analyzeFile")
 
 /**
  * Executes the ffprobe command on a given file and parses the JSON output.
@@ -18,22 +22,27 @@ fun analyzeFile(filePath: String, ffprobeExecutablePath: String): FFprobeOutput?
     // Construct the ffprobe command to get format and stream info in JSON format
     val ffprobeCommand = listOf(
         ffprobeExecutablePath,
-        "-hide_banner", // Suppress ffprobe version banner (LOOK THIS UP)
-        "-of", "json", // Makes output format JSON
-        "-show_format", // Include format level info
-        "-show_streams", // Include stream-level info
+        "-hide_banner",
+        "-of", "json",
+        "-show_format",
+        "-show_streams",
         filePath
     )
 
-    println("Analyzing file with the following command: ${ffprobeCommand.joinToString(" ")}")
+    // Use logger.info() for informational messages
+    logger.info("Analyzing file with the following command: {}", ffprobeCommand.joinToString(" "))
 
-    // Execute ffprobe command with executeCommand function
-    val ffprobeResult = executeCommand(ffprobeCommand)
+    // Execute ffprobe command with executeCommand function (assuming it's accessible)
+    val ffprobeResult = executeCommand(ffprobeCommand) // Make sure executeCommand is defined and accessible
 
     // if ffprobe didn't execute properly
     if (!ffprobeResult.isSuccess) {
-        System.err.println("FFprobe's attempt at reading the file failed. Exit code: ${ffprobeResult.exitCode}")
-        System.err.println("FFprobe's error output: \n${ffprobeResult.error}")
+        // Use logger.error() for failures
+        logger.error(
+            "FFprobe's attempt at reading the file failed. Exit code: {}. FFprobe's error output: \n{}",
+            ffprobeResult.exitCode,
+            ffprobeResult.error
+        )
         return null
     }
 
@@ -43,9 +52,13 @@ fun analyzeFile(filePath: String, ffprobeExecutablePath: String): FFprobeOutput?
     // parse the JSON output into the data classes w/ the kotlinx.serialization library
     return try {
         json.decodeFromString<FFprobeOutput>(ffprobeJsonOutput)
-    } catch (e: Exception) { // catch (e: JsonDecodingException) ADD THIS LATER
-        System.err.println("Error Message:\n${e.message}")
-        System.err.println("FFprobe Raw Output:\n${ffprobeResult.output}")
+    } catch (e: Exception) { // switch to JSON decoding exception to catch specific JSON decoding exceptions using import
+        // Log JSON parsing errors as ERROR
+        logger.error("Failed to parse FFprobe JSON output for file {}. Error: {}. Raw Output:\n{}", filePath, e.message, ffprobeResult.output, e)
+        return null
+    } catch (e: Exception) { // Catch any other unexpected exceptions during parsing
+        // Log general parsing errors as ERROR
+        logger.error("An unexpected error occurred while parsing FFprobe output for file {}. Error: {}. Raw Output:\n{}", filePath, e.message, ffprobeResult.output, e)
         return null
     }
 }

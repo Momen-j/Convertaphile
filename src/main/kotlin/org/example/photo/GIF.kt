@@ -3,10 +3,16 @@ package org.example.photo
 import org.example.utilities.ConversionResult
 import org.example.utilities.FFmpegConvertibleType
 import org.example.utilities.executeCommand
+import org.slf4j.LoggerFactory
 import java.io.File
 
 // Represents an instance of a GIF file
 class GIF(override val inputFilePath: String): FFmpegConvertibleType {
+    // define companion object for logger that is a single instance shared across all GIF instances
+    companion object {
+        private val logger = LoggerFactory.getLogger(GIF::class.java)
+    }
+
     // override convertTo function in case I need to specify flags
     /**
      * Overrides the default convertTo implementation for GIF files.
@@ -35,7 +41,6 @@ class GIF(override val inputFilePath: String): FFmpegConvertibleType {
         if (isSingleFormat) {
             command.add("-frames:v")
             command.add("1")
-            println("Adding -frames:v 1 flag for GIF to single image conversion")
         }
 
         // add the output file path
@@ -44,13 +49,11 @@ class GIF(override val inputFilePath: String): FFmpegConvertibleType {
         // execute the command
         val result = executeCommand(command)
 
-        // Log whether conversion was a success
-        // SECTION TO USE LOGGING TOOLS
         if (result.isSuccess) {
-            println("Successfully converted $inputFilePath to $outputFilePath")
+            logger.info("Successfully converted $inputFilePath to $outputFilePath")
         } else {
-            System.err.println("Failed to convert $inputFilePath to $outputFilePath. Exit Code: ${result.exitCode}")
-            System.err.println("FFmpeg Error Output:\n${result.error}")
+            logger.error("Failed to convert {} to {}. Exit Code: {}", inputFilePath, outputFilePath, result.exitCode)
+            logger.error("FFmpeg Error Output:\n{}", result.error)
         }
 
         return result

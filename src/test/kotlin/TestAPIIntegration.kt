@@ -9,6 +9,7 @@ import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.install
 import io.ktor.server.routing.routing
 import io.ktor.server.testing.* // Import Ktor's testing utilities
+import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -19,6 +20,7 @@ import org.junit.jupiter.params.provider.MethodSource
 //import org.example.Application
 import org.example.utilities.ConversionRouteConfig
 import org.example.routes.conversionRoutes
+import org.example.utilities.ConversionResponse
 import org.example.utilities.analyzeFile
 import redis.clients.jedis.JedisPool
 import java.io.File
@@ -87,6 +89,9 @@ class ApiIntegrationTest {
             // create temp dir for API test files
             testFilesDir = Files.createTempDirectory("api_conversion_tests").toFile()
             testFilesDir.deleteOnExit()
+
+            // Initialize JedisPool
+            jedisPool = JedisPool("localhost", 6379)
 
             val classLoader = this::class.java.classLoader
 
@@ -225,7 +230,7 @@ class ApiIntegrationTest {
     // Parameterized test for /conversion endpoint
     @ParameterizedTest(name = "API Convert {0} to .{1} ({2})")
     @MethodSource("conversionApiTestCases")
-    fun testConversionEndpoint(sourceFileNameWithDir: String, targetExtension: String, mediaType: String) =
+    fun testConversionEndpoint(sourceFileNameWithDir: String, targetExtension: String) =
         testApplication {
             // configure application
             application {
@@ -279,26 +284,41 @@ class ApiIntegrationTest {
                 "API conversion failed for $sourceFileNameWithDir to .$targetExtension. Response: ${response.bodyAsText()}"
             )
 
-            // assert content-disposition header
-            val contentDispositionHeader = response.headers[HttpHeaders.ContentDisposition]
-            assertNotNull(contentDispositionHeader, "Content-Disposition header is missing")
-            assertTrue(
-                contentDispositionHeader!!.contains("attachment"),
-                "Content-Disposition header is not 'attachment'."
-            )
-
-            // assert content type header
+            // assert content type is JSON (since we're now returning metadata)
             val contentTypeHeader = response.headers[HttpHeaders.ContentType]
             assertNotNull(contentTypeHeader, "Content-Type header is missing")
-            assertEquals(
-                determineContentType(targetExtension).toString(),
-                contentTypeHeader,
-                "Content type header is incorrect"
+            assertTrue(
+                contentTypeHeader!!.contains("application/json"),
+                "Content type should be JSON, but was: $contentTypeHeader"
             )
 
-            // check if response body isn't empty (essentially checking if a file was returned
-            val responseBytes = response.body<ByteArray>()
-            assertTrue(responseBytes.isNotEmpty(), "Response body for converted file is empty")
+            // Parse and validate the JSON response
+            val responseBody = response.bodyAsText()
+            assertNotNull(responseBody, "Response body is null")
+            assertTrue(responseBody.isNotEmpty(), "Response body is empty")
+
+            // Deserialize the ConversionResponse
+            val json = Json { ignoreUnknownKeys = true }
+            val conversionResponse = json.decodeFromString<ConversionResponse>(responseBody)
+
+            // Validate the conversion response fields
+            assertNotNull(conversionResponse.conversionId, "Conversion ID should not be null")
+            assertTrue(conversionResponse.conversionId.isNotEmpty(), "Conversion ID should not be empty")
+
+            assertEquals(targetExtension, conversionResponse.targetFormat, "Target format mismatch")
+
+            assertTrue(conversionResponse.convertedFileName.isNotEmpty(), "Converted filename should not be empty")
+            assertTrue(conversionResponse.convertedFileName.endsWith(".$targetExtension"),
+                "Converted filename should end with target extension")
+
+            assertTrue(conversionResponse.fileSizeBytes > 0, "File size should be greater than 0")
+
+            assertTrue(conversionResponse.downloadUrl.startsWith("/download/"),
+                "Download URL should start with /download/")
+            assertTrue(conversionResponse.downloadUrl.contains(conversionResponse.conversionId),
+                "Download URL should contain the conversion ID")
+
+            assertEquals("File converted successfully", conversionResponse.message, "Success message mismatch")
         }
 
     // TODO: Add tests for error cases (e.g. FFmpeg failure)
@@ -339,13 +359,67 @@ class ApiIntegrationTest {
                             append(HttpHeaders.ContentType, ContentType.Image.JPEG.toString())
                             append(HttpHeaders.ContentDisposition, "filename=\"${inputTestFile.name}\"")
                         })
-                        // Missing 'targetFormat' part
+                        // Missing 'targetFormat' part for text purposes
                     }
                 )
             )
         }
         assertEquals(HttpStatusCode.BadRequest, response.status)
         assertEquals("Missing file or target format", response.bodyAsText())
+    }
+
+    // Test the download endpoint if you want to verify the actual file
+    @Test
+    fun testConversionAndDownload() = testApplication {
+        application {
+            val routeConfig = ConversionRouteConfig(ffmpegExecutablePath, ffprobeExecutablePath, testFilesDir, jedisPool)
+            install(io.ktor.server.plugins.contentnegotiation.ContentNegotiation) { json() }
+            routing { conversionRoutes(routeConfig) }
+        }
+
+        val inputTestFile = File(testFilesDir, "image/sample.jpg")
+        val targetExtension = "png"
+
+        // First, perform the conversion
+        val conversionResponse = client.post("/conversion") {
+            setBody(
+                MultiPartFormDataContent(
+                    formData {
+                        append("file", inputTestFile.readBytes(), Headers.build {
+                            append(HttpHeaders.ContentType, ContentType.Image.JPEG.toString())
+                            append(HttpHeaders.ContentDisposition, "filename=\"${inputTestFile.name}\"")
+                        })
+                        append("targetFormat", targetExtension)
+                    }
+                )
+            )
+        }
+
+        assertEquals(HttpStatusCode.OK, conversionResponse.status)
+
+        val responseBody = conversionResponse.bodyAsText()
+        val json = Json { ignoreUnknownKeys = true }
+        val conversionData = json.decodeFromString<ConversionResponse>(responseBody)
+
+        // Then, try to download the converted file
+        val downloadResponse = client.get(conversionData.downloadUrl)
+
+        // Verify download response
+        assertEquals(HttpStatusCode.OK, downloadResponse.status, "Download should succeed")
+
+        val downloadContentType = downloadResponse.headers[HttpHeaders.ContentType]
+        assertEquals(
+            determineContentType(targetExtension).toString(),
+            downloadContentType,
+            "Downloaded file content type should match target format"
+        )
+
+        val downloadedBytes = downloadResponse.body<ByteArray>()
+        assertTrue(downloadedBytes.isNotEmpty(), "Downloaded file should not be empty")
+        assertEquals(conversionData.fileSizeBytes, downloadedBytes.size.toLong(),
+            "Downloaded file size should match metadata")
+
+        println("✅ Download test passed: Successfully downloaded ${downloadedBytes.size} bytes")
     }
 
 }

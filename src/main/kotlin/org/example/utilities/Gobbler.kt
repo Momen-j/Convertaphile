@@ -1,6 +1,10 @@
 package org.example.utilities
 
+import org.slf4j.LoggerFactory
 import java.io.BufferedReader
+
+private val logger = LoggerFactory.getLogger("org.example.utilities.Gobbler") // Give it a meaningful name
+
 
 // INSTANCE OF A TASK TO BE EXECUTED W/IN A THREAD (implements runnable interface)
 // Helper class to read a process' input stream in a separate thread
@@ -25,7 +29,7 @@ class Gobbler(private val reader: BufferedReader): Runnable {
             }
         } catch (e: Exception) {
             // WHERE TO INTEGRATE LOG ROCKET/SENTRY USE TO LOG ERRORS
-            System.err.println("Error reading FFmpeg process stream ${e.message}")
+            logger.error("Error reading FFmpeg process stream {}", e.message)
         } finally {
             // close reader to release resources
             reader.close();

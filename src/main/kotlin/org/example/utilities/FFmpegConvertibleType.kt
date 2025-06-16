@@ -1,8 +1,10 @@
 package org.example.utilities
 
 import java.io.File
+import org.slf4j.LoggerFactory
 
 interface FFmpegConvertibleType {
+    val logger get() = LoggerFactory.getLogger(javaClass)
     val inputFilePath: String // property all implementing classes must provide
 
     /**
@@ -43,7 +45,7 @@ interface FFmpegConvertibleType {
 
         command.add(outputFilePath) // Add the output file path at the end
 
-        println("Converting $inputFilePath to $outputFilePath using command: ${command.joinToString(" | ")}")
+        logger.info("Converting {} to {} using command: {}", inputFilePath, outputFilePath, command.joinToString(" | "))
 
         // Execute the FFmpeg command using executeCommand helper function and assign the result
         val result = executeCommand(command)
@@ -51,10 +53,15 @@ interface FFmpegConvertibleType {
         // Log whether conversion was a success
         // SECTION TO USE LOGGING TOOLS
         if (result.isSuccess) {
-            println("Successfully converted $inputFilePath to $outputFilePath")
+            logger.info("Successfully converted {} to {}", inputFilePath, outputFilePath)
         } else {
-            System.err.println("Failed to convert $inputFilePath to $outputFilePath. Exit Code: ${result.exitCode}")
-            System.err.println("FFmpeg Error Output:\n${result.error}")
+            logger.error(
+                "Failed to convert {} to {}. \nExit Code: {}. \nFFmpeg Error Output:\n{}",
+                inputFilePath,
+                outputFilePath,
+                result.exitCode,
+                result.error
+            )
         }
 
         return result
