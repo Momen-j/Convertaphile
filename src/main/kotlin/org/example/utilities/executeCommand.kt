@@ -52,7 +52,7 @@ fun executeCommand(command: List<String>, timeoutSeconds: Long = 60): Conversion
         val exited = process.waitFor(timeoutSeconds, TimeUnit.SECONDS)
 
         // Join Gobbler Threads
-        // Once main thread finished, we need to ensure Gobbler tasks have read all available output
+        // Once main thread finished, ensure Gobbler tasks have read all available output
         // FFmpeg process may finish but there may still be data in our buffers not read yet
         // join() makes the main thread wait until threads have completed their run() method
         // indicated when the reader closes

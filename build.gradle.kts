@@ -72,6 +72,10 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:1.5.13") // Use the latest stable version
     // Logback Core (dependency of logback-classic)
     implementation("ch.qos.logback:logback-core:1.5.13")
+
+    // For SMTPAppender to send emails: Jakarta Mail (recommended for modern Java)
+    //implementation("com.sun.mail:jakarta.mail:2.0.1")
+    //implementation("org.codehaus.janino:janino:3.1.12")
 }
 
 tasks.test {

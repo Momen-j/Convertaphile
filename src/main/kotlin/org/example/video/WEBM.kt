@@ -42,9 +42,6 @@ class WEBM(override val inputFilePath: String): FFmpegConvertibleType {
                 command.add("128k")
             }
             "mkv" -> {
-                // MKV is a flexible container; can often stream copy if codecs are compatible,
-                // or re-encode to common codecs like H.264/AAC
-                // For simplicity, we'll re-encode to H.264/AAC for now
                 command.add("-c:v")
                 command.add("libx264")
                 command.add("-c:a")

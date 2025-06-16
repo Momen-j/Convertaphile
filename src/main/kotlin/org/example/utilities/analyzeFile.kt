@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory
 private val json = Json { ignoreUnknownKeys = true }
 
 // Get a logger instance for this file (or a specific utility logger)
-// Since this is a top-level function in a file, we can define a logger directly.
 private val logger = LoggerFactory.getLogger("org.example.utilities.analyzeFile")
 
 /**
