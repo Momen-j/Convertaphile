@@ -39,8 +39,8 @@ private val REDIS_HOST: String = System.getenv("REDIS_HOST") ?: "localhost"
 private val REDIS_PORT: Int = System.getenv("REDIS_PORT")?.toIntOrNull() ?: 6379
 
 // file cleanup config
-private val FILE_EXPIRATION_HOURS: Long = System.getenv("FILE_EXPIRATION_HOURS")?.toLongOrNull() ?: 2L
-private val CLEANUP_INTERVAL_HOURS: Long = System.getenv("CLEANUP_INTERVAL_HOURS")?.toLongOrNull() ?: 1L
+private val FILE_EXPIRATION_MINUTES: Long = System.getenv("FILE_EXPIRATION_MINUTES")?.toLongOrNull() ?: 15L
+private val CLEANUP_INTERVAL_MINUTES: Long = System.getenv("CLEANUP_INTERVAL_MINUTES")?.toLongOrNull() ?: 15L
 
 private val logger = LoggerFactory.getLogger("org.example.utilities.Application")
 
@@ -51,12 +51,12 @@ private val logger = LoggerFactory.getLogger("org.example.utilities.Application"
 suspend fun startFileCleanupScheduler(tempFilesBaseDir: File) {
     // Use GlobalScope for application-lifetime coroutines
     GlobalScope.launch(Dispatchers.IO) {
-        logger.info("🧹 File cleanup scheduler started - checking every {} hour(s)", CLEANUP_INTERVAL_HOURS)
+        logger.info("🧹 File cleanup scheduler started - checking every {} minute(s)", CLEANUP_INTERVAL_MINUTES)
     }
 
     while (true) {
         try {
-            delay(TimeUnit.HOURS.toMillis(CLEANUP_INTERVAL_HOURS))
+            delay(TimeUnit.MINUTES.toMillis(CLEANUP_INTERVAL_MINUTES))
             cleanupExpiredFiles(tempFilesBaseDir)
         } catch (e: Exception) {
             logger.error("Error in cleanup scheduler: {}", e.message, e)
@@ -65,8 +65,8 @@ suspend fun startFileCleanupScheduler(tempFilesBaseDir: File) {
 }
 
 /**
- * Cleans up files older than FILE_EXPIRATION_HOURS
- * Creates a cutoff time using current time - FILE_EXPIRATION_HOURS
+ * Cleans up files older than FILE_EXPIRATION_MINUTES
+ * Creates a cutoff time using current time - FILE_EXPIRATION_MINUTES
  * Any file created before that cutoff time is auto deleted
  */
 fun cleanupExpiredFiles(tempFilesBaseDir: File) {
@@ -78,7 +78,7 @@ fun cleanupExpiredFiles(tempFilesBaseDir: File) {
             return
         }
 
-        val expirationTime = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(FILE_EXPIRATION_HOURS)
+        val expirationTime = System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(FILE_EXPIRATION_MINUTES)
         var cleanedCount = 0
         var totalSizeCleaned = 0L
 
@@ -91,7 +91,7 @@ fun cleanupExpiredFiles(tempFilesBaseDir: File) {
                     if (file.delete()) {
                         cleanedCount++
                         totalSizeCleaned += fileSize
-                        logger.info("🗑️ Cleaned up expired file: ${file.name}")
+                        //logger.info("🗑️ Cleaned up expired file: ${file.name}")
                     } else {
                         logger.error("⚠️ Failed to delete expired file: {}", file.name)
                     }
@@ -105,7 +105,7 @@ fun cleanupExpiredFiles(tempFilesBaseDir: File) {
             val sizeMB = totalSizeCleaned / (1024.0 * 1024.0)
             logger.info("🧹 Cleanup completed: Removed {} files ({} MB)", cleanedCount, String.format("%.2f", sizeMB))
         } else {
-            logger.info("🧹 Cleanup completed: No expired files found")
+            //logger.info("🧹 Cleanup completed: No expired files found")
         }
 
     } catch (e: Exception) {

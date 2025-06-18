@@ -46,8 +46,8 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
     val tempFilesBaseDir = config.tempFilesBaseDir
     val redisClient = config.jedisPool
 
-    // either make into an exportable separate util function, use ffprobe (why am i not???), or make a service class
-    // for time being we are using separate util function defined within extension function
+    // either make into an exportable separate util function, use ffprobe, or make a service class
+    // for time being using separate util function defined within extension function
     val determineContentType: (String) -> ContentType = { fileExtension ->
         when (fileExtension.lowercase()) {
             "png" -> ContentType.Image.PNG
