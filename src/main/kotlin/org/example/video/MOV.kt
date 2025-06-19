@@ -123,7 +123,7 @@ class MOV(override val inputFilePath: String): FFmpegConvertibleType {
 
         logger.info("Converting {} to {} using custom AVI command: {}", inputFilePath, outputFilePath, command.joinToString(" "))
 
-        val result = executeCommand(command)
+        val result = executeCommand(command, timeoutSeconds = 180L) // wait for 3 minutes before terminating process
 
         if (result.isSuccess) {
             logger.info("Successfully converted {} to {}", inputFilePath, outputFilePath)
