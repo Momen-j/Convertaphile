@@ -78,6 +78,17 @@ dependencies {
     //implementation("org.codehaus.janino:janino:3.1.12")
 }
 
+// Configure shadow JAR
+tasks.shadowJar {
+    archiveFileName.set("${project.name}-${project.version}-all.jar")
+    mergeServiceFiles()
+}
+
+// Make build depend on shadowJar
+tasks.build {
+    dependsOn(tasks.shadowJar)
+}
+
 tasks.test {
     useJUnitPlatform()
 }
