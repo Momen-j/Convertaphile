@@ -26,6 +26,8 @@ import kotlinx.coroutines.*
 import org.slf4j.LoggerFactory
 import java.net.URI
 
+private val logger = LoggerFactory.getLogger("org.example.utilities.Application")
+
 // Config constants to be passed to routing module
 private val FFMPEG_PATH: String = System.getenv("FFMPEG_PATH")
     ?: "ffmpeg"
@@ -92,8 +94,6 @@ fun setupStorageDirectory(): File {
 // file cleanup config
 private val FILE_EXPIRATION_MINUTES: Long = System.getenv("FILE_EXPIRATION_MINUTES")?.toLongOrNull() ?: 15L
 private val CLEANUP_INTERVAL_MINUTES: Long = System.getenv("CLEANUP_INTERVAL_MINUTES")?.toLongOrNull() ?: 15L
-
-private val logger = LoggerFactory.getLogger("org.example.utilities.Application")
 
 
 /**
