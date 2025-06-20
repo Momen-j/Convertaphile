@@ -35,7 +35,55 @@ private val FFPROBE_PATH: String = System.getenv("FFPROBE_PATH")
     //"C:\\ffmpeg\\ffmpeg-7.0.2-full_build\\ffmpeg-7.0.2-full_build\\bin\\ffprobe.exe"
 
 // Temp directory for temporary uploaded & converted files
-private val TEMP_FILES_BASE_DIR: File = Files.createTempDirectory("convertaphile").toFile().apply{ deleteOnExit() }
+//private val TEMP_FILES_BASE_DIR: File = Files.createTempDirectory("convertaphile").toFile().apply{ deleteOnExit() }
+private val TEMP_FILES_BASE_DIR: File = setupStorageDirectory()
+
+/**
+ * Sets up storage directory for Railway volume or local development
+ * Railway volume mount path: /convertaphile-storage
+ */
+fun setupStorageDirectory(): File {
+    // Check if we're on Railway with the volume mounted
+    val volumePath = "/convertaphile-storage"
+    val volumeDir = File(volumePath)
+
+    val baseDir = if (volumeDir.exists() && volumeDir.canWrite()) {
+        // We're on Railway with the volume mounted
+        logger.info("Using Railway volume storage at: {}", volumePath)
+        volumeDir
+    } else {
+        // Fallback for local development
+        logger.info("Railway volume not found, using temporary directory for local development")
+        Files.createTempDirectory("convertaphile").toFile().apply { deleteOnExit() }
+    }
+
+    // Create subdirectories
+    val tempFilesDir = File(baseDir, "temp_files")
+    val convertedFilesDir = File(baseDir, "converted_files")
+
+    // Ensure directories exist
+    listOf(tempFilesDir, convertedFilesDir).forEach { dir ->
+        if (!dir.exists()) {
+            val success = dir.mkdirs()
+            if (!success) {
+                throw RuntimeException("Failed to create directory: ${dir.absolutePath}")
+            }
+            logger.info("Created directory: {}", dir.absolutePath)
+        }
+    }
+
+    // Verify write permissions
+    if (!tempFilesDir.canWrite()) {
+        throw RuntimeException("Cannot write to temp directory: ${tempFilesDir.absolutePath}")
+    }
+
+    logger.info("Storage setup complete:")
+    logger.info("  Base directory: {}", baseDir.absolutePath)
+    logger.info("  Temp files: {}", tempFilesDir.absolutePath)
+    logger.info("  Converted files: {}", convertedFilesDir.absolutePath)
+
+    return tempFilesDir
+}
 
 // local redis setup
 // private val REDIS_HOST: String = System.getenv("REDIS_HOST") ?: "localhost"
