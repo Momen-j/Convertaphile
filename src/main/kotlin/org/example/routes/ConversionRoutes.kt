@@ -299,8 +299,21 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
             val fileSizeMB = fileSizeBytes / (1024.0 * 1024.0)
 
             // Redis tracking - increment conversion statistics
-            redisClient.hincrby("conversion_stats", "total_files", 1)
-            redisClient.hincrbyfloat("conversion_stats", "total_size_mb", fileSizeMB)
+            //redisClient.hincrby("conversion_stats", "total_files", 1)
+            //redisClient.hincrbyfloat("conversion_stats", "total_size_mb", fileSizeMB)
+            try {
+                redisClient?.let { pool ->
+                    val jedis = pool.resource
+                    try {
+                        jedis.hincrBy("conversion_stats", "total_files", 1)
+                        jedis.hincrByFloat("conversion_stats", "total_size_mb", fileSizeMB)
+                    } finally {
+                        jedis.close() // This returns the connection to the pool
+                    }
+                }
+            } catch (e: Exception) {
+                logger.warn("Failed to update Redis conversion stats: ${e.message}")
+            }
 
             // Return conversion metadata instead of the file
             call.respond(ConversionResponse(
@@ -373,7 +386,19 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
             )
 
             // Track download in Redis
-            redisClient.hincrby("conversion_stats", "total_downloads", 1)
+            // redisClient.hincrby("conversion_stats", "total_downloads", 1)
+            try {
+                redisClient?.let { pool ->
+                    val jedis = pool.resource
+                    try {
+                        jedis.hincrBy("conversion_stats", "total_downloads", 1)
+                    } finally {
+                        jedis.close()
+                    }
+                }
+            } catch (e: Exception) {
+                logger.warn("Failed to update Redis download stats: ${e.message}")
+            }
 
             // Send the file
             call.respondFile(convertedFile)
@@ -399,7 +424,14 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
 
     get("/stats") {
         try {
-            val stats = redisClient.hgetall("conversion_stats")
+            val stats = redisClient?.let { pool ->
+                val jedis = pool.resource
+                try {
+                    jedis.hgetAll("conversion_stats")
+                } finally {
+                    jedis.close()
+                }
+            } ?: emptyMap()
 
             val response = ConversionStatsResponse(
                 totalFiles = stats["total_files"]?.toLongOrNull() ?: 0L,
@@ -411,7 +443,7 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
             call.respond(response)
 
         } catch (e: Exception) {
-            logger.error("️Error retrieving stats: {}", e.message, e)
+            logger.error("Error retrieving stats: {}", e.message, e)
             call.respond(HttpStatusCode.InternalServerError, "Error retrieving statistics")
         }
     }

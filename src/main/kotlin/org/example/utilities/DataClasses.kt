@@ -21,7 +21,7 @@ data class ConversionRouteConfig(
     val ffmpegExecutablePath: String,
     val ffprobeExecutablePath: String,
     val tempFilesBaseDir: File,
-    val jedisPool: JedisPool
+    val jedisPool: JedisPool?
 )
 
 // --- Data classes to match ffprobe JSON structure (simplified) ---

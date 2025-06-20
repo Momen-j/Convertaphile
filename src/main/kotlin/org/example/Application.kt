@@ -24,6 +24,7 @@ import redis.clients.jedis.JedisPool
 // Coroutines imports for cleanup scheduler
 import kotlinx.coroutines.*
 import org.slf4j.LoggerFactory
+import java.net.URI
 
 // Config constants to be passed to routing module
 private val FFMPEG_PATH: String = System.getenv("FFMPEG_PATH")
@@ -131,7 +132,26 @@ fun Application.module() {
     }
 
     // create redis connection pool
-    val jedisPool = JedisPool(REDIS_HOST, REDIS_PORT)
+    //val jedisPool = JedisPool(REDIS_HOST, REDIS_PORT)
+
+    fun createJedisPool(): JedisPool? {
+        val redisUrl = System.getenv("REDIS_URL")
+
+        return if (!redisUrl.isNullOrEmpty()) {
+            try {
+                val redisUri = URI.create(redisUrl)
+                JedisPool(redisUri)
+            } catch (e: Exception) {
+                logger.error("Failed to create Redis connection: ${e.message}")
+                null
+            }
+        } else {
+            logger.info("No REDIS_URL environment variable found")
+            null
+        }
+    }
+
+    val jedisPool = createJedisPool()
 
     // configure configuration object for application routes
     val routeConfig = ConversionRouteConfig(
