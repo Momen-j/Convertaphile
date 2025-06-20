@@ -28,16 +28,18 @@ import java.net.URI
 
 // Config constants to be passed to routing module
 private val FFMPEG_PATH: String = System.getenv("FFMPEG_PATH")
-    ?: "C:\\ffmpeg\\ffmpeg-7.0.2-full_build\\ffmpeg-7.0.2-full_build\\bin\\ffmpeg.exe"
+    ?: "ffmpeg"
+    //"C:\\ffmpeg\\ffmpeg-7.0.2-full_build\\ffmpeg-7.0.2-full_build\\bin\\ffmpeg.exe"
 private val FFPROBE_PATH: String = System.getenv("FFPROBE_PATH")
-    ?: "C:\\ffmpeg\\ffmpeg-7.0.2-full_build\\ffmpeg-7.0.2-full_build\\bin\\ffprobe.exe"
+    ?: "ffprobe"
+    //"C:\\ffmpeg\\ffmpeg-7.0.2-full_build\\ffmpeg-7.0.2-full_build\\bin\\ffprobe.exe"
 
 // Temp directory for temporary uploaded & converted files
 private val TEMP_FILES_BASE_DIR: File = Files.createTempDirectory("convertaphile").toFile().apply{ deleteOnExit() }
 
-// redis setup
-private val REDIS_HOST: String = System.getenv("REDIS_HOST") ?: "localhost"
-private val REDIS_PORT: Int = System.getenv("REDIS_PORT")?.toIntOrNull() ?: 6379
+// local redis setup
+// private val REDIS_HOST: String = System.getenv("REDIS_HOST") ?: "localhost"
+// private val REDIS_PORT: Int = System.getenv("REDIS_PORT")?.toIntOrNull() ?: 6379
 
 // file cleanup config
 private val FILE_EXPIRATION_MINUTES: Long = System.getenv("FILE_EXPIRATION_MINUTES")?.toLongOrNull() ?: 15L
