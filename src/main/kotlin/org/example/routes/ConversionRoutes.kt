@@ -85,6 +85,7 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
     // handles POST requests to /conversion
     // File upload & conversion endpoint
     post("/conversion") {
+        logger.info("=== CONVERSION ENDPOINT HIT ===")
         // vars needed in order to create final file output
         var tempInputFile: File? = null
         var outputFilePath: String? = null
@@ -153,6 +154,7 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
                 return@post
             }
 
+            logger.info("=== REACHED FFPROBE USAGE ===")
             // analyze the file with ffprobe to determine actual type
             val ffprobeData = analyzeFile(tempInputFile.absolutePath, ffprobeExecutablePath)
 
