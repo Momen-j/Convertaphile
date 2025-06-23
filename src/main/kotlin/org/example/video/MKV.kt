@@ -51,11 +51,13 @@ class MKV(override val inputFilePath: String): FFmpegConvertibleType {
                 command.add("-crf")
                 command.add("10")      // High quality (good balance)
                 command.add("-cpu-used")
-                command.add("1")       // Near-maximum quality
+                command.add("3")
+                command.add("-threads")
+                command.add("4")
                 command.add("-c:a")
                 command.add("libvorbis")
                 command.add("-q:a")
-                command.add("2")       // High audio quality
+                command.add("3")
             }
 
             "wmv" -> {
