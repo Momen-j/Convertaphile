@@ -45,35 +45,39 @@ class MKV(override val inputFilePath: String): FFmpegConvertibleType {
             }
 
             "webm" -> {
-                // Use VP8 instead of VP9 - much faster encoding
-                logger.info("Using RE-ENCODING for WEBM (VP8 + Vorbis - fast preset)")
+                logger.info("Using RE-ENCODING for WEBM (VP8 + Vorbis - quality preset)")
                 command.add("-c:v")
-                command.add("libvpx")  // VP8 instead of libvpx-vp9
+                command.add("libvpx")
                 command.add("-crf")
-                command.add("10")      // Higher quality, faster than CRF 30
+                command.add("18")      // Much better quality (lower = better)
                 command.add("-b:v")
-                command.add("2M")      // Set target bitrate
+                command.add("1M")      // Lower bitrate but with better CRF
                 command.add("-cpu-used")
-                command.add("5")       // Faster encoding (0=slowest, 16=fastest)
+                command.add("2")       // Slower but better quality (0=best, 16=fastest)
                 command.add("-c:a")
-                command.add("libvorbis") // Vorbis instead of Opus (faster)
+                command.add("libvorbis")
                 command.add("-q:a")
-                command.add("5")       // Quality-based audio encoding
+                command.add("3")       // Better audio quality (lower = better)
             }
 
             "wmv" -> {
-                // Optimized WMV settings
-                logger.info("Using RE-ENCODING for WMV (fast preset)")
+                logger.info("Using RE-ENCODING for WMV (memory-optimized preset)")
                 command.add("-c:v")
                 command.add("libx264")
                 command.add("-preset")
-                command.add("fast")    // Much faster than "medium"
+                command.add("ultrafast")   // Fastest preset to avoid timeout
                 command.add("-crf")
-                command.add("25")      // Slightly lower quality but much faster
+                command.add("28")          // Balanced quality/speed
+                command.add("-maxrate")
+                command.add("1M")          // Limit bitrate to reduce memory usage
+                command.add("-bufsize")
+                command.add("2M")          // Buffer size control
                 command.add("-c:a")
                 command.add("aac")
                 command.add("-b:a")
-                command.add("128k")
+                command.add("96k")         // Lower audio bitrate
+                command.add("-threads")
+                command.add("2")           // Limit thread usage
             }
 
             "mp3" -> {
