@@ -45,19 +45,17 @@ class MKV(override val inputFilePath: String): FFmpegConvertibleType {
             }
 
             "webm" -> {
-                logger.info("Using RE-ENCODING for WEBM (VP8 + Vorbis - quality preset)")
+                logger.info("Using RE-ENCODING for WEBM (VP8 + Vorbis - high quality)")
                 command.add("-c:v")
                 command.add("libvpx")
                 command.add("-crf")
-                command.add("18")      // Better quality (was 10)
-                command.add("-b:v")
-                command.add("2M")      // Keep your original bitrate
+                command.add("10")      // High quality (good balance)
                 command.add("-cpu-used")
-                command.add("3")       // Slight compromise (was 5)
+                command.add("1")       // Near-maximum quality
                 command.add("-c:a")
                 command.add("libvorbis")
                 command.add("-q:a")
-                command.add("4")       // Better audio (was 5)
+                command.add("2")       // High audio quality
             }
 
             "wmv" -> {
