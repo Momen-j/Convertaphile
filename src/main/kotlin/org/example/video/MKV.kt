@@ -19,35 +19,55 @@ class MKV(override val inputFilePath: String): FFmpegConvertibleType {
         )
 
         when (targetExtension) {
-            "mp4", "webm", "avi" -> {
-                // Stream copy - no re-encoding needed for these formats
+            "mp4" -> {
+                // Stream copy + web optimization
+                logger.info("Using STREAM COPY for MP4 (with faststart)")
                 command.add("-c")
                 command.add("copy")
-                // Add faststart for MP4 to optimize for web streaming
-                if (targetExtension == "mp4") {
-                    command.add("-movflags")
-                    command.add("faststart")
-                }
+                command.add("-movflags")
+                command.add("faststart")
             }
+
             "mov" -> {
-                // For MOV, typically use H.264 (libx264) for video and AAC for audio
+                // Stream copy + web optimization
+                logger.info("Using STREAM COPY for MOV (with faststart)")
+                command.add("-c")
+                command.add("copy")
+                command.add("-movflags")
+                command.add("faststart")
+            }
+
+            "avi" -> {
+                // Stream copy (no faststart - AVI doesn't support it)
+                logger.info("Using STREAM COPY for AVI")
+                command.add("-c")
+                command.add("copy")
+            }
+
+            "webm" -> {
+                // Must re-encode (WEBM expects VP8/VP9 + Vorbis/Opus)
+                logger.info("Using RE-ENCODING for WEBM (VP9 + Opus)")
                 command.add("-c:v")
-                command.add("libx264")
-                command.add("-c:a")
-                command.add("aac")
+                command.add("libvpx-vp9")
                 command.add("-crf")
-                command.add("23")
+                command.add("30")
+                command.add("-c:a")
+                command.add("libopus")
                 command.add("-b:a")
                 command.add("128k")
             }
+
             "wmv" -> {
-                // WMV, re-encode to wmv2/wma2
+                // Must re-encode (WMV expects Microsoft codecs)
+                logger.info("Using RE-ENCODING for WMV")
                 command.add("-c:v")
-                command.add("wmv2")
+                command.add("libx264")  // Best compatibility
+                command.add("-preset")
+                command.add("medium")
+                command.add("-crf")
+                command.add("23")
                 command.add("-c:a")
-                command.add("wmav2")
-                command.add("-b:v")
-                command.add("1M")
+                command.add("aac")
                 command.add("-b:a")
                 command.add("128k")
             }
