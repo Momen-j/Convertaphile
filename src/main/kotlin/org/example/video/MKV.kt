@@ -19,26 +19,15 @@ class MKV(override val inputFilePath: String): FFmpegConvertibleType {
         )
 
         when (targetExtension) {
-            "mp4" -> {
-                // For MP4, typically use H.264 (libx264) for video and AAC for audio
-                command.add("-c:v")
-                command.add("libx264")
-                command.add("-c:a")
-                command.add("aac")
-                command.add("-crf")
-                command.add("23")
-                command.add("-b:a")
-                command.add("128k")
-            }
-            "webm" -> {
-                command.add("-c:v")
-                command.add("libvpx") // Use VP8 codec
-                command.add("-c:a")
-                command.add("libopus")
-                command.add("-crf")
-                command.add("10")   // A good quality setting for VP8 (range 4-63, lower is better quality for VP8)
-                command.add("-b:a")
-                command.add("128k") // Audio bitrate
+            "mp4", "webm", "avi" -> {
+                // Stream copy - no re-encoding needed for these formats
+                command.add("-c")
+                command.add("copy")
+                // Add faststart for MP4 to optimize for web streaming
+                if (targetExtension == "mp4") {
+                    command.add("-movflags")
+                    command.add("faststart")
+                }
             }
             "mov" -> {
                 // For MOV, typically use H.264 (libx264) for video and AAC for audio
@@ -50,18 +39,6 @@ class MKV(override val inputFilePath: String): FFmpegConvertibleType {
                 command.add("23")
                 command.add("-b:a")
                 command.add("128k")
-            }
-            "avi" -> {
-                // For AVI, typically use MPEG-4 (DivX/Xvid compatible) for video and MP3 for audio
-                command.add("-c:v")
-                command.add("mpeg4") // or libxvid if enabled in FFmpeg build
-                command.add("-c:a")
-                command.add("libmp3lame") // MP3 audio codec
-                // Add quality/bitrate flags
-                command.add("-b:v")
-                command.add("1M") // 1 Mbps for video
-                command.add("-b:a")
-                command.add("128k") // 128 kbps for audio
             }
             "wmv" -> {
                 // WMV, re-encode to wmv2/wma2
