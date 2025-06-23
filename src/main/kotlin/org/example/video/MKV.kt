@@ -45,32 +45,37 @@ class MKV(override val inputFilePath: String): FFmpegConvertibleType {
             }
 
             "webm" -> {
-                // Must re-encode (WEBM expects VP8/VP9 + Vorbis/Opus)
-                logger.info("Using RE-ENCODING for WEBM (VP9 + Opus)")
+                // Use VP8 instead of VP9 - much faster encoding
+                logger.info("Using RE-ENCODING for WEBM (VP8 + Vorbis - fast preset)")
                 command.add("-c:v")
-                command.add("libvpx-vp9")
+                command.add("libvpx")  // VP8 instead of libvpx-vp9
                 command.add("-crf")
-                command.add("30")
+                command.add("10")      // Higher quality, faster than CRF 30
+                command.add("-b:v")
+                command.add("2M")      // Set target bitrate
+                command.add("-cpu-used")
+                command.add("5")       // Faster encoding (0=slowest, 16=fastest)
                 command.add("-c:a")
-                command.add("libopus")
-                command.add("-b:a")
-                command.add("128k")
+                command.add("libvorbis") // Vorbis instead of Opus (faster)
+                command.add("-q:a")
+                command.add("5")       // Quality-based audio encoding
             }
 
             "wmv" -> {
-                // Must re-encode (WMV expects Microsoft codecs)
-                logger.info("Using RE-ENCODING for WMV")
+                // Optimized WMV settings
+                logger.info("Using RE-ENCODING for WMV (fast preset)")
                 command.add("-c:v")
-                command.add("libx264")  // Best compatibility
+                command.add("libx264")
                 command.add("-preset")
-                command.add("medium")
+                command.add("fast")    // Much faster than "medium"
                 command.add("-crf")
-                command.add("23")
+                command.add("25")      // Slightly lower quality but much faster
                 command.add("-c:a")
                 command.add("aac")
                 command.add("-b:a")
                 command.add("128k")
             }
+
             "mp3" -> {
                 command.add("-c:a")
                 command.add("libmp3lame") // MP3 encoder
