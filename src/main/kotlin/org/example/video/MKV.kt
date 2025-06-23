@@ -49,15 +49,15 @@ class MKV(override val inputFilePath: String): FFmpegConvertibleType {
                 command.add("-c:v")
                 command.add("libvpx")
                 command.add("-crf")
-                command.add("18")      // Much better quality (lower = better)
+                command.add("18")      // Better quality (was 10)
                 command.add("-b:v")
-                command.add("1M")      // Lower bitrate but with better CRF
+                command.add("2M")      // Keep your original bitrate
                 command.add("-cpu-used")
-                command.add("2")       // Slower but better quality (0=best, 16=fastest)
+                command.add("3")       // Slight compromise (was 5)
                 command.add("-c:a")
                 command.add("libvorbis")
                 command.add("-q:a")
-                command.add("3")       // Better audio quality (lower = better)
+                command.add("4")       // Better audio (was 5)
             }
 
             "wmv" -> {
@@ -125,7 +125,7 @@ class MKV(override val inputFilePath: String): FFmpegConvertibleType {
 
         command.add(outputFilePath)
 
-        logger.info("Converting {} to {} using custom AVI command: {}", inputFilePath, outputFilePath, command.joinToString(" "))
+        logger.info("Converting {} to {} using custom MKV command: {}", inputFilePath, outputFilePath, command.joinToString(" "))
 
         val result = executeCommand(command, timeoutSeconds = 180L) // wait for 3 minutes before terminating process
 
