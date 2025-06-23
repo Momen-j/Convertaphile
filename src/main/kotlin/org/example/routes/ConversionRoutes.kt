@@ -196,7 +196,8 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
                 hasVideoStream -> {
                     if (formatName?.contains("mp4") == true || fileExtension == "mp4") {
                         MP4(tempInputFile.absolutePath)
-                    } else if (formatName?.contains("mkv") == true) {
+                    } else if (formatName?.contains("matroska") == true || fileExtension == "mkv") {
+                        logger.info("Detected MKV file: formatName='$formatName', extension='$fileExtension'")
                         MKV(tempInputFile.absolutePath)
                     } else if (formatName?.contains("mov") == true) {
                         MOV(tempInputFile.absolutePath)
