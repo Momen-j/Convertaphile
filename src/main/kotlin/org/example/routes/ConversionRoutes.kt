@@ -200,7 +200,8 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
                     } else if (formatName?.contains("matroska") == true && fileExtension == "mkv") {
                         logger.info("Detected MKV file: formatName='$formatName', extension='$fileExtension'")
                         MKV(tempInputFile.absolutePath)
-                    } else if (formatName?.contains("mov") == true) {
+                    } else if (formatName?.contains("mov") == true
+                        && fileExtension == "mov") {
                         logger.info("Detected MOV file: formatName='$formatName', extension='$fileExtension'")
                         MOV(tempInputFile.absolutePath)
                     } else if (formatName?.contains("avi") == true) {
