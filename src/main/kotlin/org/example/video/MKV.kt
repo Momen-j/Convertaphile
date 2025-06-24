@@ -38,10 +38,14 @@ class MKV(override val inputFilePath: String): FFmpegConvertibleType {
             }
 
             "avi" -> {
-                // Stream copy (no faststart - AVI doesn't support it)
-                logger.info("Using STREAM COPY for AVI")
-                command.add("-c")
-                command.add("copy")
+                // Copy video but re-encode audio to MP3 for AVI compatibility
+                logger.info("Using VIDEO COPY + AUDIO RE-ENCODING for AVI (H.264 + MP3)")
+                command.add("-c:v")
+                command.add("copy")          // Keep video as-is
+                command.add("-c:a")
+                command.add("libmp3lame")    // Re-encode audio to MP3
+                command.add("-b:a")
+                command.add("192k")          // Good audio quality
             }
 
             "webm" -> {
