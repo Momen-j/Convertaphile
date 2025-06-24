@@ -20,61 +20,88 @@ class WMV(override val inputFilePath: String): FFmpegConvertibleType {
 
         when (targetExtension) {
             "mp4" -> {
-                // For MP4, typically use H.264 (libx264) for video and AAC for audio
+                // Stream copy + web optimization (WMV to MP4 usually needs re-encoding)
+                logger.info("Converting WMV to MP4 with deployment-optimized H.264")
                 command.add("-c:v")
                 command.add("libx264")
+                command.add("-crf")
+                command.add("26")           // Balanced quality/speed
+                command.add("-preset")
+                command.add("fast")         // Good speed/quality balance
                 command.add("-c:a")
                 command.add("aac")
-                command.add("-crf")
-                command.add("23")
                 command.add("-b:a")
                 command.add("128k")
+                command.add("-movflags")
+                command.add("faststart")
+                command.add("-threads")
+                command.add("3")            // Moderate thread usage
             }
+
             "mov" -> {
-                // For MOV, typically use H.264 (libx264) for video and AAC for audio
+                logger.info("Converting WMV to MOV with deployment-optimized H.264")
                 command.add("-c:v")
                 command.add("libx264")
+                command.add("-crf")
+                command.add("26")
+                command.add("-preset")
+                command.add("fast")
                 command.add("-c:a")
                 command.add("aac")
-                command.add("-crf")
-                command.add("23") // Common good quality for H.264
                 command.add("-b:a")
                 command.add("128k")
+                command.add("-movflags")
+                command.add("faststart")
+                command.add("-threads")
+                command.add("3")
             }
+
             "mkv" -> {
-                // MKV is a flexible container; can often stream copy if codecs are compatible,
-                // or re-encode to common codecs like H.264/AAC
-                // For simplicity, we'll re-encode to H.264/AAC for now
+                logger.info("Converting WMV to MKV with optimized H.264")
                 command.add("-c:v")
                 command.add("libx264")
+                command.add("-crf")
+                command.add("25")           // Slightly better quality for MKV
+                command.add("-preset")
+                command.add("medium")       // Better quality for flexible container
                 command.add("-c:a")
                 command.add("aac")
-                command.add("-crf")
-                command.add("23")
                 command.add("-b:a")
-                command.add("128k")
+                command.add("160k")         // Higher audio quality
+                command.add("-threads")
+                command.add("3")
             }
+
             "avi" -> {
-                // For AVI, typically use MPEG-4 (DivX/Xvid compatible) for video and MP3 for audio
+                logger.info("Converting WMV to AVI with MPEG-4 + AC3")
                 command.add("-c:v")
-                command.add("mpeg4") // or libxvid if enabled in FFmpeg build
-                command.add("-c:a")
-                command.add("libmp3lame") // MP3 audio codec
-                // Add quality/bitrate flags
+                command.add("mpeg4")
                 command.add("-b:v")
-                command.add("1M") // 1 Mbps for video
+                command.add("2M")           // Higher bitrate for good quality
+                command.add("-c:a")
+                command.add("ac3")          // Better AVI audio compatibility
                 command.add("-b:a")
-                command.add("128k") // 128 kbps for audio
+                command.add("192k")         // Higher audio quality
+                command.add("-threads")
+                command.add("2")            // Conservative for older codec
             }
+
             "webm" -> {
+                logger.info("Converting WMV to WEBM with deployment-optimized VP9")
                 command.add("-c:v")
-                command.add("libvpx") // Use VP8 codec
+                command.add("libvpx-vp9")
+                command.add("-crf")
+                command.add("32")           // Balanced quality/speed for WMV source
+                command.add("-b:v")
+                command.add("0")
+                command.add("-cpu-used")
+                command.add("6")            // Good speed/quality balance
+                command.add("-threads")
+                command.add("3")
                 command.add("-c:a")
                 command.add("libopus")
-                command.add("-crf")
-                command.add("10")   // A good quality setting for VP8 (range 4-63, lower is better quality for VP8)
                 command.add("-b:a")
-                command.add("128k") // Audio bitrate
+                command.add("128k")
             }
             "mp3" -> {
                 command.add("-c:a")
