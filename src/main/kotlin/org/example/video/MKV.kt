@@ -45,23 +45,21 @@ class MKV(override val inputFilePath: String): FFmpegConvertibleType {
             }
 
             "webm" -> {
-                logger.info("Using RE-ENCODING for WEBM (VP9 + Opus - high quality)")
+                logger.info("Using RE-ENCODING for WEBM (VP9 + Opus - faster preset)")
                 command.add("-c:v")
                 command.add("libvpx-vp9")
                 command.add("-crf")
-                command.add("23")          // Good quality for VP9 (VP9 CRF works differently)
+                command.add("27")          // Back to faster CRF
                 command.add("-b:v")
-                command.add("0")           // Let CRF control bitrate
+                command.add("0")
                 command.add("-cpu-used")
-                command.add("2")           // Good speed/quality balance for VP9
-                command.add("-auto-alt-ref")
-                command.add("1")           // VP9 quality enhancement
-                command.add("-lag-in-frames")
-                command.add("25")          // VP9 quality enhancement (>=12 recommended)
+                command.add("4")           // Much faster (was probably 2)
+                command.add("-threads")
+                command.add("4")           // Use more threads
                 command.add("-c:a")
-                command.add("libopus")     // Opus is better than Vorbis for WebM
+                command.add("libopus")
                 command.add("-b:a")
-                command.add("128k")        // Good audio quality
+                command.add("128k")
             }
 
             "wmv" -> {
