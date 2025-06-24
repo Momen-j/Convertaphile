@@ -22,19 +22,34 @@ class AVI(override val inputFilePath: String): FFmpegConvertibleType {
 
         when (targetExtension) {
             "mp4" -> {
-                // Stream copy + web optimization (if codecs are compatible)
-                logger.info("Using STREAM COPY for MP4 (with faststart)")
-                command.add("-c")
-                command.add("copy")
+                // Try stream copy first, but with fallback logic
+                logger.info("Converting AVI to MP4 with optimized H.264")
+                command.add("-c:v")
+                command.add("libx264")
+                command.add("-crf")
+                command.add("20")           // Higher quality than 23
+                command.add("-preset")
+                command.add("medium")       // Good balance of speed/quality
+                command.add("-c:a")
+                command.add("aac")
+                command.add("-b:a")
+                command.add("192k")         // Higher audio quality
                 command.add("-movflags")
                 command.add("faststart")
             }
 
             "mov" -> {
-                // Stream copy + web optimization
-                logger.info("Using STREAM COPY for MOV (with faststart)")
-                command.add("-c")
-                command.add("copy")
+                logger.info("Converting AVI to MOV with optimized H.264")
+                command.add("-c:v")
+                command.add("libx264")
+                command.add("-crf")
+                command.add("20")
+                command.add("-preset")
+                command.add("medium")
+                command.add("-c:a")
+                command.add("aac")
+                command.add("-b:a")
+                command.add("192k")
                 command.add("-movflags")
                 command.add("faststart")
             }
@@ -44,11 +59,11 @@ class AVI(override val inputFilePath: String): FFmpegConvertibleType {
                 command.add("-c:v")
                 command.add("libvpx-vp9")
                 command.add("-crf")
-                command.add("27")
+                command.add("25")           // Slightly better quality for AVI source
                 command.add("-b:v")
                 command.add("0")
                 command.add("-cpu-used")
-                command.add("4")
+                command.add("2")            // Slower but better quality
                 command.add("-threads")
                 command.add("4")
                 command.add("-c:a")
@@ -58,10 +73,18 @@ class AVI(override val inputFilePath: String): FFmpegConvertibleType {
             }
 
             "mkv" -> {
-                // Stream copy for MKV (very compatible container)
-                logger.info("Using STREAM COPY for MKV")
-                command.add("-c")
-                command.add("copy")
+                // Re-encode for AVI sources to ensure compatibility
+                logger.info("Converting AVI to MKV with H.264/AAC")
+                command.add("-c:v")
+                command.add("libx264")
+                command.add("-crf")
+                command.add("20")
+                command.add("-preset")
+                command.add("medium")
+                command.add("-c:a")
+                command.add("aac")
+                command.add("-b:a")
+                command.add("192k")
             }
 
             "wmv" -> {
@@ -69,11 +92,11 @@ class AVI(override val inputFilePath: String): FFmpegConvertibleType {
                 command.add("-c:v")
                 command.add("wmv2")
                 command.add("-b:v")
-                command.add("5M")
+                command.add("6M")           // Even higher bitrate
                 command.add("-maxrate")
-                command.add("6M")
+                command.add("8M")
                 command.add("-bufsize")
-                command.add("12M")
+                command.add("16M")
                 command.add("-c:a")
                 command.add("wmav2")
                 command.add("-b:a")
