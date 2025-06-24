@@ -97,17 +97,23 @@ class AVI(override val inputFilePath: String): FFmpegConvertibleType {
             }
 
             "wmv" -> {
-                logger.info("Converting AVI to WMV with fast settings")
+                logger.info("Converting AVI to WMV with enhanced quality settings")
                 command.add("-c:v")
                 command.add("wmv2")
                 command.add("-b:v")
-                command.add("2M")           // Lower bitrate for speed
+                command.add("4M")           // Increased from 2M to 4M
+                command.add("-maxrate")
+                command.add("5M")           // Add rate control
+                command.add("-bufsize")
+                command.add("8M")           // Larger buffer for better quality
                 command.add("-c:a")
                 command.add("wmav2")
                 command.add("-b:a")
-                command.add("128k")
+                command.add("192k")         // Increased audio bitrate
                 command.add("-threads")
-                command.add("1")            // Single thread for WMV
+                command.add("4")            // Increased from 1 to 4 threads
+                command.add("-g")
+                command.add("300")          // Keyframe interval for better quality
             }
             "mp3" -> {
                 command.add("-c:a")
