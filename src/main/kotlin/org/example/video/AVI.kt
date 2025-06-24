@@ -27,58 +27,64 @@ class AVI(override val inputFilePath: String): FFmpegConvertibleType {
 
         when (targetExtension) {
             "mp4" -> {
-                // For MP4, typically use H.264 (libx264) for video and AAC for audio
-                command.add("-c:v")
-                command.add("libx264")
-                command.add("-c:a")
-                command.add("aac")
-                command.add("-crf")
-                command.add("23")
-                command.add("-b:a")
-                command.add("128k")
+                // Stream copy + web optimization (if codecs are compatible)
+                logger.info("Using STREAM COPY for MP4 (with faststart)")
+                command.add("-c")
+                command.add("copy")
+                command.add("-movflags")
+                command.add("faststart")
             }
+
+            "mov" -> {
+                // Stream copy + web optimization
+                logger.info("Using STREAM COPY for MOV (with faststart)")
+                command.add("-c")
+                command.add("copy")
+                command.add("-movflags")
+                command.add("faststart")
+            }
+
             "webm" -> {
+                logger.info("Using RE-ENCODING for WEBM (VP9 + Opus)")
                 command.add("-c:v")
-                command.add("libvpx") // Use VP8 codec
+                command.add("libvpx-vp9")
+                command.add("-crf")
+                command.add("27")
+                command.add("-b:v")
+                command.add("0")
+                command.add("-cpu-used")
+                command.add("4")
+                command.add("-threads")
+                command.add("4")
                 command.add("-c:a")
                 command.add("libopus")
-                command.add("-crf")
-                command.add("10")   // A good quality setting for VP8 (range 4-63, lower is better quality for VP8)
-                command.add("-b:a")
-                command.add("128k") // Audio bitrate
-            }
-            "mov" -> {
-                // For MOV, typically use H.264 (libx264) for video and AAC for audio
-                command.add("-c:v")
-                command.add("libx264")
-                command.add("-c:a")
-                command.add("aac")
-                command.add("-crf")
-                command.add("23")
                 command.add("-b:a")
                 command.add("128k")
             }
+
             "mkv" -> {
-                // MKV is flexible, re-encode to H.264/AAC for consistency
-                command.add("-c:v")
-                command.add("libx264")
-                command.add("-c:a")
-                command.add("aac")
-                command.add("-crf")
-                command.add("23")
-                command.add("-b:a")
-                command.add("128k")
+                // Stream copy for MKV (very compatible container)
+                logger.info("Using STREAM COPY for MKV")
+                command.add("-c")
+                command.add("copy")
             }
+
             "wmv" -> {
-                // WMV, re-encode to wmv2/wma2
+                logger.info("Using RE-ENCODING for WMV (High Quality)")
                 command.add("-c:v")
                 command.add("wmv2")
+                command.add("-b:v")
+                command.add("5M")
+                command.add("-maxrate")
+                command.add("6M")
+                command.add("-bufsize")
+                command.add("12M")
                 command.add("-c:a")
                 command.add("wmav2")
-                command.add("-b:v")
-                command.add("1M")
                 command.add("-b:a")
-                command.add("128k")
+                command.add("192k")
+                command.add("-threads")
+                command.add("2")
             }
             "mp3" -> {
                 command.add("-c:a")
