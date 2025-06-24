@@ -38,16 +38,16 @@ class MKV(override val inputFilePath: String): FFmpegConvertibleType {
             }
 
             "avi" -> {
-                // Copy video but re-encode audio using built-in MP3 encoder
-                logger.info("Using VIDEO COPY + BUILT-IN MP3 for AVI (H.264 + MP3)")
+                // Copy video, use AC3 audio (most reliable for AVI)
+                logger.info("Using VIDEO COPY + AC3 AUDIO for AVI (Maximum Compatibility)")
                 command.add("-c:v")
-                command.add("copy")          // Keep video as-is
+                command.add("copy")          // Keep H.264 video
                 command.add("-c:a")
-                command.add("mp3")           // Use built-in MP3 encoder (not libmp3lame)
+                command.add("ac3")           // AC3 audio - rock solid AVI support
                 command.add("-b:a")
-                command.add("192k")          // Good audio quality
+                command.add("192k")          // Good quality
                 command.add("-ar")
-                command.add("48000")         // Explicit sample rate
+                command.add("48000")         // Standard sample rate for AC3
             }
 
             "webm" -> {
