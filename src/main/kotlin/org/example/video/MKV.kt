@@ -67,11 +67,11 @@ class MKV(override val inputFilePath: String): FFmpegConvertibleType {
                 command.add("-c:v")
                 command.add("wmv2")
                 command.add("-b:v")
-                command.add("3M")          // Higher video bitrate (was 1M)
+                command.add("5M")          // Maximum quality
                 command.add("-maxrate")
-                command.add("4M")          // Set maximum bitrate
+                command.add("6M")
                 command.add("-bufsize")
-                command.add("8M")          // Buffer size (2x maxrate)
+                command.add("12M")
                 command.add("-c:a")
                 command.add("wmav2")
                 command.add("-b:a")
