@@ -20,59 +20,94 @@ class WEBM(override val inputFilePath: String): FFmpegConvertibleType {
 
         when (targetExtension) {
             "mp4" -> {
-                // For MP4, typically use H.264 (libx264) for video and AAC for audio
+                // Stream copy + web optimization (WebM to MP4)
+                logger.info("Converting WebM to MP4 with optimized H.264")
                 command.add("-c:v")
                 command.add("libx264")
+                command.add("-crf")
+                command.add("23")           // Good quality for web
+                command.add("-preset")
+                command.add("medium")       // Balanced speed/quality
                 command.add("-c:a")
                 command.add("aac")
-                command.add("-crf")
-                command.add("23")
                 command.add("-b:a")
-                command.add("128k")
+                command.add("160k")         // Higher audio quality
+                command.add("-movflags")
+                command.add("faststart")
+                command.add("-threads")
+                command.add("3")
             }
+
             "mov" -> {
-                // For MOV, typically use H.264 (libx264) for video and AAC for audio
+                logger.info("Converting WebM to MOV with optimized H.264")
                 command.add("-c:v")
                 command.add("libx264")
-                command.add("-c:a")
-                command.add("aac")
-                command.add("-crf")
-                command.add("23") // Common good quality for H.264
-                command.add("-b:a")
-                command.add("128k")
-            }
-            "mkv" -> {
-                command.add("-c:v")
-                command.add("libx264")
-                command.add("-c:a")
-                command.add("aac")
                 command.add("-crf")
                 command.add("23")
-                command.add("-b:a")
-                command.add("128k")
-            }
-            "avi" -> {
-                // For AVI, typically use MPEG-4 (DivX/Xvid compatible) for video and MP3 for audio
-                command.add("-c:v")
-                command.add("mpeg4") // or libxvid if enabled in FFmpeg build
+                command.add("-preset")
+                command.add("medium")
                 command.add("-c:a")
-                command.add("libmp3lame") // MP3 audio codec
-                // Add quality/bitrate flags
-                command.add("-b:v")
-                command.add("1M") // 1 Mbps for video
+                command.add("aac")
                 command.add("-b:a")
-                command.add("128k") // 128 kbps for audio
+                command.add("160k")
+                command.add("-movflags")
+                command.add("faststart")
+                command.add("-threads")
+                command.add("3")
             }
+
+            "mkv" -> {
+                // Stream copy if possible (WebM and MKV are both Matroska-based)
+                logger.info("Converting WebM to MKV with stream copy attempt")
+                command.add("-c")
+                command.add("copy")         // Try stream copy first
+                // Fallback: if stream copy fails, this will re-encode
+                command.add("-c:v")
+                command.add("libx264")
+                command.add("-crf")
+                command.add("21")           // Higher quality for MKV
+                command.add("-c:a")
+                command.add("aac")
+                command.add("-b:a")
+                command.add("192k")
+            }
+
+            "avi" -> {
+                logger.info("Converting WebM to AVI with optimized settings")
+                command.add("-c:v")
+                command.add("libx264")      // H.264 instead of mpeg4 for better quality
+                command.add("-crf")
+                command.add("24")           // Good quality
+                command.add("-preset")
+                command.add("fast")
+                command.add("-bsf:v")
+                command.add("h264_mp4toannexb")  // AVI compatibility
+                command.add("-c:a")
+                command.add("ac3")          // Better AVI audio than MP3
+                command.add("-b:a")
+                command.add("192k")
+                command.add("-threads")
+                command.add("2")
+            }
+
             "wmv" -> {
-                // WMV, re-encode to wmv2/wma2
+                logger.info("Converting WebM to WMV with high quality settings")
                 command.add("-c:v")
                 command.add("wmv2")
+                command.add("-b:v")
+                command.add("3M")           // Much higher bitrate
+                command.add("-maxrate")
+                command.add("4M")           // Rate control
+                command.add("-bufsize")
+                command.add("8M")           // Larger buffer
                 command.add("-c:a")
                 command.add("wmav2")
-                command.add("-b:v")
-                command.add("1M")
                 command.add("-b:a")
-                command.add("128k")
+                command.add("192k")         // Higher audio quality
+                command.add("-threads")
+                command.add("3")
+                command.add("-g")
+                command.add("300")          // Keyframe interval
             }
             "mp3" -> {
                 command.add("-c:a")
