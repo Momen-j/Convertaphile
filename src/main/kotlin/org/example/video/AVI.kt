@@ -8,11 +8,6 @@ import org.slf4j.LoggerFactory
 import java.io.File
 
 class AVI(override val inputFilePath: String): FFmpegConvertibleType {
-    // define companion object for logger that is a single instance shared across all AVI instances
-    companion object {
-        private val logger = LoggerFactory.getLogger(AVI::class.java)
-    }
-
     /**
      * Overrides the default convertTo implementation for AVI files.
      * Specifies appropriate video and audio codecs based on the output format.
