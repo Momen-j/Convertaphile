@@ -22,87 +22,92 @@ class AVI(override val inputFilePath: String): FFmpegConvertibleType {
 
         when (targetExtension) {
             "mp4" -> {
-                // Try stream copy first, but with fallback logic
-                logger.info("Converting AVI to MP4 with optimized H.264")
+                logger.info("Converting AVI to MP4 with deployment-optimized settings")
                 command.add("-c:v")
                 command.add("libx264")
                 command.add("-crf")
-                command.add("20")           // Higher quality than 23
+                command.add("28")           // Faster encoding, smaller file
                 command.add("-preset")
-                command.add("medium")       // Good balance of speed/quality
+                command.add("ultrafast")    // Much faster encoding
                 command.add("-c:a")
                 command.add("aac")
                 command.add("-b:a")
-                command.add("192k")         // Higher audio quality
+                command.add("128k")         // Lower audio bitrate
                 command.add("-movflags")
                 command.add("faststart")
+                // Memory and performance optimizations
+                command.add("-threads")
+                command.add("2")            // Limit thread usage
+                command.add("-bufsize")
+                command.add("1M")           // Smaller buffer
             }
 
             "mov" -> {
-                logger.info("Converting AVI to MOV with optimized H.264")
+                logger.info("Converting AVI to MOV with deployment-optimized settings")
                 command.add("-c:v")
                 command.add("libx264")
                 command.add("-crf")
-                command.add("20")
+                command.add("28")
                 command.add("-preset")
-                command.add("medium")
+                command.add("ultrafast")
                 command.add("-c:a")
                 command.add("aac")
                 command.add("-b:a")
-                command.add("192k")
+                command.add("128k")
                 command.add("-movflags")
                 command.add("faststart")
+                command.add("-threads")
+                command.add("2")
+                command.add("-bufsize")
+                command.add("1M")
             }
 
             "webm" -> {
-                logger.info("Using RE-ENCODING for WEBM (VP9 + Opus)")
+                logger.info("Converting AVI to WEBM with fast settings")
                 command.add("-c:v")
                 command.add("libvpx-vp9")
                 command.add("-crf")
-                command.add("25")           // Slightly better quality for AVI source
+                command.add("35")           // Lower quality for speed
                 command.add("-b:v")
                 command.add("0")
                 command.add("-cpu-used")
-                command.add("2")            // Slower but better quality
+                command.add("8")            // Fastest VP9 setting
                 command.add("-threads")
-                command.add("4")
+                command.add("2")
                 command.add("-c:a")
                 command.add("libopus")
                 command.add("-b:a")
-                command.add("128k")
+                command.add("96k")          // Lower audio bitrate
             }
 
             "mkv" -> {
-                // Re-encode for AVI sources to ensure compatibility
-                logger.info("Converting AVI to MKV with H.264/AAC")
+                logger.info("Converting AVI to MKV with fast H.264")
                 command.add("-c:v")
                 command.add("libx264")
                 command.add("-crf")
-                command.add("20")
+                command.add("28")
                 command.add("-preset")
-                command.add("medium")
+                command.add("ultrafast")
                 command.add("-c:a")
                 command.add("aac")
                 command.add("-b:a")
-                command.add("192k")
+                command.add("128k")
+                command.add("-threads")
+                command.add("2")
             }
 
             "wmv" -> {
-                logger.info("Using RE-ENCODING for WMV (High Quality)")
+                logger.info("Converting AVI to WMV with fast settings")
                 command.add("-c:v")
                 command.add("wmv2")
                 command.add("-b:v")
-                command.add("6M")           // Even higher bitrate
-                command.add("-maxrate")
-                command.add("8M")
-                command.add("-bufsize")
-                command.add("16M")
+                command.add("2M")           // Lower bitrate for speed
                 command.add("-c:a")
                 command.add("wmav2")
                 command.add("-b:a")
-                command.add("192k")
+                command.add("128k")
                 command.add("-threads")
-                command.add("2")
+                command.add("1")            // Single thread for WMV
             }
             "mp3" -> {
                 command.add("-c:a")
