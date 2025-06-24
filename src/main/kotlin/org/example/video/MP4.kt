@@ -20,64 +20,71 @@ class MP4(override val inputFilePath: String): FFmpegConvertibleType {
         )
 
         when (targetExtension) {
-            "webm" -> {
+            "mov" -> {
+                // Stream copy + web optimization (MP4 to MOV is very similar)
+                logger.info("Using STREAM COPY for MOV (with faststart)")
+                command.add("-c")
+                command.add("copy")
+                command.add("-movflags")
+                command.add("faststart")
+            }
+
+            "avi" -> {
+                // Copy video with bitstream filter, use AC3 audio
+                logger.info("Using VIDEO COPY + BSF + AC3 AUDIO for AVI")
                 command.add("-c:v")
-                command.add("libvpx") // Use VP8 codec
+                command.add("copy")
+                command.add("-bsf:v")
+                command.add("h264_mp4toannexb")
+                command.add("-c:a")
+                command.add("ac3")
+                command.add("-b:a")
+                command.add("192k")
+                command.add("-ar")
+                command.add("48000")
+            }
+
+            "webm" -> {
+                logger.info("Using RE-ENCODING for WEBM (VP9 + Opus)")
+                command.add("-c:v")
+                command.add("libvpx-vp9")
+                command.add("-crf")
+                command.add("27")
+                command.add("-b:v")
+                command.add("0")
+                command.add("-cpu-used")
+                command.add("4")
+                command.add("-threads")
+                command.add("4")
                 command.add("-c:a")
                 command.add("libopus")
-                command.add("-crf")
-                command.add("10")   // A good quality setting for VP8 (range 4-63, lower is better quality for VP8)
-                command.add("-b:a")
-                command.add("128k") // Audio bitrate
-            }
-            "avi" -> {
-                // For AVI, typically use MPEG-4 (DivX/Xvid compatible) for video and MP3 for audio
-                command.add("-c:v")
-                command.add("mpeg4") // or libxvid if enabled in FFmpeg build
-                command.add("-c:a")
-                command.add("libmp3lame") // MP3 audio codec
-                // Add quality/bitrate flags
-                command.add("-b:v")
-                command.add("1M") // 1 Mbps for video
-                command.add("-b:a")
-                command.add("128k") // 128 kbps for audio
-            }
-            "mov" -> {
-                // For MOV, typically use H.264 (libx264) for video and AAC for audio
-                command.add("-c:v")
-                command.add("libx264")
-                command.add("-c:a")
-                command.add("aac")
-                command.add("-crf")
-                command.add("23") // Common good quality for H.264
                 command.add("-b:a")
                 command.add("128k")
             }
+
             "mkv" -> {
-                // MKV is a flexible container; can often stream copy if codecs are compatible,
-                // or re-encode to common codecs like H.264/AAC
-                // For simplicity, we'll re-encode to H.264/AAC for now
-                command.add("-c:v")
-                command.add("libx264")
-                command.add("-c:a")
-                command.add("aac")
-                command.add("-crf")
-                command.add("23")
-                command.add("-b:a")
-                command.add("128k")
+                // Stream copy for MKV (very compatible container)
+                logger.info("Using STREAM COPY for MKV")
+                command.add("-c")
+                command.add("copy")
             }
+
             "wmv" -> {
-                // WMV typically uses Windows Media Video codecs (vc1, wmv2, wmv3)
-                // This might require specific FFmpeg build configurations.
-                // For simplicity, let's try a generic re-encode to wmv2/wma2
+                logger.info("Using RE-ENCODING for WMV")
                 command.add("-c:v")
                 command.add("wmv2")
+                command.add("-b:v")
+                command.add("5M")
+                command.add("-maxrate")
+                command.add("6M")
+                command.add("-bufsize")
+                command.add("12M")
                 command.add("-c:a")
                 command.add("wmav2")
-                command.add("-b:v")
-                command.add("1M")
                 command.add("-b:a")
-                command.add("128k")
+                command.add("192k")
+                command.add("-threads")
+                command.add("2")
             }
             "mp3" -> {
                 command.add("-c:a")
