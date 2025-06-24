@@ -92,8 +92,8 @@ fun setupStorageDirectory(): File {
 // private val REDIS_PORT: Int = System.getenv("REDIS_PORT")?.toIntOrNull() ?: 6379
 
 // file cleanup config
-private val FILE_EXPIRATION_MINUTES: Long = System.getenv("FILE_EXPIRATION_MINUTES")?.toLongOrNull() ?: 15L
-private val CLEANUP_INTERVAL_MINUTES: Long = System.getenv("CLEANUP_INTERVAL_MINUTES")?.toLongOrNull() ?: 15L
+private val FILE_EXPIRATION_MINUTES: Long = System.getenv("FILE_EXPIRATION_MINUTES")?.toLongOrNull() ?: 5L
+private val CLEANUP_INTERVAL_MINUTES: Long = System.getenv("CLEANUP_INTERVAL_MINUTES")?.toLongOrNull() ?: 5L
 
 
 /**
