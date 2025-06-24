@@ -205,7 +205,8 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
                         AVI(tempInputFile.absolutePath)
                     } else if (formatName?.contains("webm") == true) {
                         WEBM(tempInputFile.absolutePath)
-                    } else if (formatName?.contains("wmv") == true) {
+                    } else if (formatName?.contains("wmv") == true
+                        || formatName?.contains("asf") == true) {
                         WMV(tempInputFile.absolutePath)
                     } else {
                         // Fallback for other video containers, or throw error if not supported
