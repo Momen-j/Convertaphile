@@ -57,19 +57,10 @@ class WEBM(override val inputFilePath: String): FFmpegConvertibleType {
             }
 
             "mkv" -> {
-                // Stream copy if possible (WebM and MKV are both Matroska-based)
-                logger.info("Converting WebM to MKV with stream copy attempt")
+                // Simple stream copy for WebM to MKV (both Matroska-based)
+                logger.info("Converting WebM to MKV with stream copy")
                 command.add("-c")
-                command.add("copy")         // Try stream copy first
-                // Fallback: if stream copy fails, this will re-encode
-                command.add("-c:v")
-                command.add("libx264")
-                command.add("-crf")
-                command.add("21")           // Higher quality for MKV
-                command.add("-c:a")
-                command.add("aac")
-                command.add("-b:a")
-                command.add("192k")
+                command.add("copy")
             }
 
             "avi" -> {
