@@ -49,7 +49,7 @@ class MKV(override val inputFilePath: String): FFmpegConvertibleType {
                 command.add("-c:v")
                 command.add("libvpx-vp9")
                 command.add("-crf")
-                command.add("30")          // Good quality for VP9 (VP9 CRF works differently)
+                command.add("23")          // Good quality for VP9 (VP9 CRF works differently)
                 command.add("-b:v")
                 command.add("0")           // Let CRF control bitrate
                 command.add("-cpu-used")
