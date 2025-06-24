@@ -196,16 +196,16 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
                 hasVideoStream -> {
                     if (formatName?.contains("mp4") == true || fileExtension == "mp4") {
                         MP4(tempInputFile.absolutePath)
-                    } else if (formatName?.contains("webm") == true) {
-                        WEBM(tempInputFile.absolutePath)
-                    } else if (formatName?.contains("matroska") == true || fileExtension == "mkv") {
+                    } else if (formatName?.contains("matroska") == true && fileExtension == "mkv") {
                         logger.info("Detected MKV file: formatName='$formatName', extension='$fileExtension'")
                         MKV(tempInputFile.absolutePath)
                     } else if (formatName?.contains("mov") == true) {
                         MOV(tempInputFile.absolutePath)
                     } else if (formatName?.contains("avi") == true) {
                         AVI(tempInputFile.absolutePath)
-                    }  else if (formatName?.contains("wmv") == true
+                    } else if (formatName?.contains("webm") == true) {
+                        WEBM(tempInputFile.absolutePath)
+                    } else if (formatName?.contains("wmv") == true
                         || formatName?.contains("asf") == true) {
                         WMV(tempInputFile.absolutePath)
                     } else {
