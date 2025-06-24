@@ -63,15 +63,19 @@ class MKV(override val inputFilePath: String): FFmpegConvertibleType {
             }
 
             "wmv" -> {
-                logger.info("Using RE-ENCODING for WMV (Windows Media Video)")
+                logger.info("Using RE-ENCODING for WMV (Windows Media Video - High Quality)")
                 command.add("-c:v")
                 command.add("wmv2")
                 command.add("-b:v")
-                command.add("1M")          // Bitrate-based encoding for WMV
+                command.add("3M")          // Higher video bitrate (was 1M)
+                command.add("-maxrate")
+                command.add("4M")          // Set maximum bitrate
+                command.add("-bufsize")
+                command.add("8M")          // Buffer size (2x maxrate)
                 command.add("-c:a")
                 command.add("wmav2")
                 command.add("-b:a")
-                command.add("128k")
+                command.add("192k")        // Higher audio bitrate (was 128k)
                 command.add("-threads")
                 command.add("2")
             }
