@@ -148,7 +148,7 @@ class WMV(override val inputFilePath: String): FFmpegConvertibleType {
 
         command.add(outputFilePath)
 
-        logger.info("Converting {} to {} using custom AVI command: {}", inputFilePath, outputFilePath, command.joinToString(" "))
+        logger.info("Converting {} to {} using custom WMV command: {}", inputFilePath, outputFilePath, command.joinToString(" "))
 
         val result = executeCommand(command, timeoutSeconds = 180L) // wait for 3 minutes before terminating process
 
