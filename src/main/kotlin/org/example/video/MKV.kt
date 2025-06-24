@@ -53,7 +53,7 @@ class MKV(override val inputFilePath: String): FFmpegConvertibleType {
                 command.add("-b:v")
                 command.add("0")
                 command.add("-cpu-used")
-                command.add("4")           // Much faster (was probably 2)
+                command.add("4")
                 command.add("-threads")
                 command.add("4")           // Use more threads
                 command.add("-c:a")
@@ -63,23 +63,17 @@ class MKV(override val inputFilePath: String): FFmpegConvertibleType {
             }
 
             "wmv" -> {
-                logger.info("Using RE-ENCODING for WMV (memory-optimized preset)")
+                logger.info("Using RE-ENCODING for WMV (Windows Media Video)")
                 command.add("-c:v")
-                command.add("libx264")
-                command.add("-preset")
-                command.add("ultrafast")   // Fastest preset to avoid timeout
-                command.add("-crf")
-                command.add("28")          // Balanced quality/speed
-                command.add("-maxrate")
-                command.add("1M")          // Limit bitrate to reduce memory usage
-                command.add("-bufsize")
-                command.add("2M")          // Buffer size control
+                command.add("wmv2")
+                command.add("-b:v")
+                command.add("1M")          // Bitrate-based encoding for WMV
                 command.add("-c:a")
-                command.add("aac")
+                command.add("wmav2")
                 command.add("-b:a")
-                command.add("96k")         // Lower audio bitrate
+                command.add("128k")
                 command.add("-threads")
-                command.add("2")           // Limit thread usage
+                command.add("2")
             }
 
             "mp3" -> {
