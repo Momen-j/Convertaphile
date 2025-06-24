@@ -38,10 +38,12 @@ class MKV(override val inputFilePath: String): FFmpegConvertibleType {
             }
 
             "avi" -> {
-                // Copy video, use AC3 audio (most reliable for AVI)
-                logger.info("Using VIDEO COPY + AC3 AUDIO for AVI (Maximum Compatibility)")
+                // Copy video with bitstream filter, use AC3 audio
+                logger.info("Using VIDEO COPY + BSF + AC3 AUDIO for AVI (H.264 Annex-B + AC3)")
                 command.add("-c:v")
                 command.add("copy")          // Keep H.264 video
+                command.add("-bsf:v")
+                command.add("h264_mp4toannexb")  // Convert H.264 to AVI-compatible format
                 command.add("-c:a")
                 command.add("ac3")           // AC3 audio - rock solid AVI support
                 command.add("-b:a")
