@@ -21,7 +21,6 @@ class MOV(override val inputFilePath: String): FFmpegConvertibleType {
         when (targetExtension) {
             "mp4" -> {
                 // Stream copy + web optimization (MOV to MP4 is very similar)
-                logger.info("Converting MOV to MP4 with stream copy and faststart")
                 command.add("-c")
                 command.add("copy")
                 command.add("-movflags")
@@ -29,7 +28,6 @@ class MOV(override val inputFilePath: String): FFmpegConvertibleType {
             }
 
             "webm" -> {
-                logger.info("Converting MOV to WebM with optimized VP9 + Opus")
                 command.add("-c:v")
                 command.add("libvpx-vp9")
                 command.add("-crf")
@@ -48,13 +46,11 @@ class MOV(override val inputFilePath: String): FFmpegConvertibleType {
 
             "mkv" -> {
                 // Stream copy for MKV (very compatible container)
-                logger.info("Converting MOV to MKV with stream copy")
                 command.add("-c")
                 command.add("copy")
             }
 
             "avi" -> {
-                logger.info("Converting MOV to AVI with optimized H.264 + AC3")
                 command.add("-c:v")
                 command.add("libx264")      // H.264 for better quality than mpeg4
                 command.add("-crf")
@@ -74,7 +70,6 @@ class MOV(override val inputFilePath: String): FFmpegConvertibleType {
             }
 
             "wmv" -> {
-                logger.info("Converting MOV to WMV with high quality settings")
                 command.add("-c:v")
                 command.add("wmv2")
                 command.add("-b:v")

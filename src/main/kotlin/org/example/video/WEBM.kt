@@ -21,7 +21,6 @@ class WEBM(override val inputFilePath: String): FFmpegConvertibleType {
         when (targetExtension) {
             "mp4" -> {
                 // Stream copy + web optimization (WebM to MP4)
-                logger.info("Converting WebM to MP4 with optimized H.264")
                 command.add("-c:v")
                 command.add("libx264")
                 command.add("-crf")
@@ -39,7 +38,6 @@ class WEBM(override val inputFilePath: String): FFmpegConvertibleType {
             }
 
             "mov" -> {
-                logger.info("Converting WebM to MOV with optimized H.264")
                 command.add("-c:v")
                 command.add("libx264")
                 command.add("-crf")
@@ -58,13 +56,11 @@ class WEBM(override val inputFilePath: String): FFmpegConvertibleType {
 
             "mkv" -> {
                 // Simple stream copy for WebM to MKV (both Matroska-based)
-                logger.info("Converting WebM to MKV with stream copy")
                 command.add("-c")
                 command.add("copy")
             }
 
             "avi" -> {
-                logger.info("Converting WebM to AVI with optimized settings")
                 command.add("-c:v")
                 command.add("libx264")      // H.264 instead of mpeg4 for better quality
                 command.add("-crf")
@@ -82,7 +78,6 @@ class WEBM(override val inputFilePath: String): FFmpegConvertibleType {
             }
 
             "wmv" -> {
-                logger.info("Converting WebM to WMV with high quality settings")
                 command.add("-c:v")
                 command.add("wmv2")
                 command.add("-b:v")

@@ -22,7 +22,6 @@ class AVI(override val inputFilePath: String): FFmpegConvertibleType {
 
         when (targetExtension) {
             "mp4" -> {
-                logger.info("Converting AVI to MP4 with deployment-optimized settings")
                 command.add("-c:v")
                 command.add("libx264")
                 command.add("-crf")
@@ -43,7 +42,6 @@ class AVI(override val inputFilePath: String): FFmpegConvertibleType {
             }
 
             "mov" -> {
-                logger.info("Converting AVI to MOV with deployment-optimized settings")
                 command.add("-c:v")
                 command.add("libx264")
                 command.add("-crf")
@@ -63,7 +61,6 @@ class AVI(override val inputFilePath: String): FFmpegConvertibleType {
             }
 
             "webm" -> {
-                logger.info("Converting AVI to WEBM with fast settings")
                 command.add("-c:v")
                 command.add("libvpx-vp9")
                 command.add("-crf")
@@ -81,7 +78,6 @@ class AVI(override val inputFilePath: String): FFmpegConvertibleType {
             }
 
             "mkv" -> {
-                logger.info("Converting AVI to MKV with fast H.264")
                 command.add("-c:v")
                 command.add("libx264")
                 command.add("-crf")
@@ -97,7 +93,6 @@ class AVI(override val inputFilePath: String): FFmpegConvertibleType {
             }
 
             "wmv" -> {
-                logger.info("Converting AVI to WMV with enhanced quality settings")
                 command.add("-c:v")
                 command.add("wmv2")
                 command.add("-b:v")

@@ -21,7 +21,6 @@ class MKV(override val inputFilePath: String): FFmpegConvertibleType {
         when (targetExtension) {
             "mp4" -> {
                 // Stream copy + web optimization
-                logger.info("Using STREAM COPY for MP4 (with faststart)")
                 command.add("-c")
                 command.add("copy")
                 command.add("-movflags")
@@ -30,7 +29,6 @@ class MKV(override val inputFilePath: String): FFmpegConvertibleType {
 
             "mov" -> {
                 // Stream copy + web optimization
-                logger.info("Using STREAM COPY for MOV (with faststart)")
                 command.add("-c")
                 command.add("copy")
                 command.add("-movflags")
@@ -39,7 +37,6 @@ class MKV(override val inputFilePath: String): FFmpegConvertibleType {
 
             "avi" -> {
                 // Copy video with bitstream filter, use AC3 audio
-                logger.info("Using VIDEO COPY + BSF + AC3 AUDIO for AVI (H.264 Annex-B + AC3)")
                 command.add("-c:v")
                 command.add("copy")          // Keep H.264 video
                 command.add("-bsf:v")
@@ -53,7 +50,6 @@ class MKV(override val inputFilePath: String): FFmpegConvertibleType {
             }
 
             "webm" -> {
-                logger.info("Using RE-ENCODING for WEBM (VP9 + Opus - faster preset)")
                 command.add("-c:v")
                 command.add("libvpx-vp9")
                 command.add("-crf")
@@ -71,7 +67,6 @@ class MKV(override val inputFilePath: String): FFmpegConvertibleType {
             }
 
             "wmv" -> {
-                logger.info("Using RE-ENCODING for WMV (Windows Media Video - High Quality)")
                 command.add("-c:v")
                 command.add("wmv2")
                 command.add("-b:v")

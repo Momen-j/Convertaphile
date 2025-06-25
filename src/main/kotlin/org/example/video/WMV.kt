@@ -21,7 +21,6 @@ class WMV(override val inputFilePath: String): FFmpegConvertibleType {
         when (targetExtension) {
             "mp4" -> {
                 // Stream copy + web optimization (WMV to MP4 usually needs re-encoding)
-                logger.info("Converting WMV to MP4 with deployment-optimized H.264")
                 command.add("-c:v")
                 command.add("libx264")
                 command.add("-crf")
@@ -39,7 +38,6 @@ class WMV(override val inputFilePath: String): FFmpegConvertibleType {
             }
 
             "mov" -> {
-                logger.info("Converting WMV to MOV with deployment-optimized H.264")
                 command.add("-c:v")
                 command.add("libx264")
                 command.add("-crf")
@@ -57,7 +55,6 @@ class WMV(override val inputFilePath: String): FFmpegConvertibleType {
             }
 
             "mkv" -> {
-                logger.info("Converting WMV to MKV with optimized H.264")
                 command.add("-c:v")
                 command.add("libx264")
                 command.add("-crf")
@@ -73,7 +70,6 @@ class WMV(override val inputFilePath: String): FFmpegConvertibleType {
             }
 
             "avi" -> {
-                logger.info("Converting WMV to AVI with MPEG-4 + AC3")
                 command.add("-c:v")
                 command.add("mpeg4")
                 command.add("-b:v")
@@ -87,7 +83,6 @@ class WMV(override val inputFilePath: String): FFmpegConvertibleType {
             }
 
             "webm" -> {
-                logger.info("Converting WMV to WEBM with deployment-optimized VP9")
                 command.add("-c:v")
                 command.add("libvpx-vp9")
                 command.add("-crf")

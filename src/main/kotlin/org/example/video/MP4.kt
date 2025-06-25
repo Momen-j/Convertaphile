@@ -22,7 +22,6 @@ class MP4(override val inputFilePath: String): FFmpegConvertibleType {
         when (targetExtension) {
             "mov" -> {
                 // Stream copy + web optimization (MP4 to MOV is very similar)
-                logger.info("Using STREAM COPY for MOV (with faststart)")
                 command.add("-c")
                 command.add("copy")
                 command.add("-movflags")
@@ -31,7 +30,6 @@ class MP4(override val inputFilePath: String): FFmpegConvertibleType {
 
             "avi" -> {
                 // Copy video with bitstream filter, use AC3 audio
-                logger.info("Using VIDEO COPY + BSF + AC3 AUDIO for AVI")
                 command.add("-c:v")
                 command.add("copy")
                 command.add("-bsf:v")
@@ -45,7 +43,6 @@ class MP4(override val inputFilePath: String): FFmpegConvertibleType {
             }
 
             "webm" -> {
-                logger.info("Using RE-ENCODING for WEBM (VP9 + Opus)")
                 command.add("-c:v")
                 command.add("libvpx-vp9")
                 command.add("-crf")
@@ -64,13 +61,11 @@ class MP4(override val inputFilePath: String): FFmpegConvertibleType {
 
             "mkv" -> {
                 // Stream copy for MKV (very compatible container)
-                logger.info("Using STREAM COPY for MKV")
                 command.add("-c")
                 command.add("copy")
             }
 
             "wmv" -> {
-                logger.info("Using RE-ENCODING for WMV")
                 command.add("-c:v")
                 command.add("wmv2")
                 command.add("-b:v")
