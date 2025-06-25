@@ -146,6 +146,7 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
                 part.dispose() // release resources allocated to that specific part, allowing it to be garbage collected
             }
 
+
             // UPLOAD VALIDATION
             // validate that tempinput file isn't empty or null/exists,
             // inputFileName isn't null, & targetExtension isn't null
@@ -426,12 +427,10 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
 
     get("/stats") {
         try {
+            @Suppress("DEPRECATION")
             val stats = redisClient?.let { pool ->
-                val jedis = pool.resource
-                try {
+                pool.resource.use { jedis ->  // This ensures proper closure
                     jedis.hgetAll("conversion_stats")
-                } finally {
-                    jedis.close()
                 }
             } ?: emptyMap()
 
