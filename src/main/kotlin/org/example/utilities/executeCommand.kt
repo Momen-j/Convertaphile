@@ -10,6 +10,12 @@ private val logger = LoggerFactory.getLogger("org.example.utilities.executeComma
 // Function gives arguments to FFmpeg to execute based on input & output file type
 // Executes an external command using ProcessBuilder
 fun executeCommand(command: List<String>, timeoutSeconds: Long = 60): ConversionResult {
+    var process: Process? = null
+    var outputThread: Thread? = null
+    var errorThread: Thread? = null
+    var outputGobbler: Gobbler? = null
+    var errorGobbler: Gobbler? = null
+
     try {
         // Create instance of ProcessBuiilder:
         // an object that configures how the external process will be started
@@ -25,7 +31,7 @@ fun executeCommand(command: List<String>, timeoutSeconds: Long = 60): Conversion
         // Executes the command given to ProcessBuilder
         // Program waits briefly while the OS starts the new process
         // Returns a proces object representing the running process
-        val process = processBuilder.start();
+        process = processBuilder.start();
 
         // -- READ OUTPUT & ERROR STREAMS CONCURRENTLY --
         // Set up Input/Error Stream Readers
@@ -36,20 +42,32 @@ fun executeCommand(command: List<String>, timeoutSeconds: Long = 60): Conversion
 
         // Create Gobbler Tasks
         // Create instances of the Gobbler class to read from each of the streams
-        val outputGobbler = Gobbler(outputReader);
-        val errorGobbler = Gobbler(errorReader);
+        outputGobbler = Gobbler(outputReader);
+        errorGobbler = Gobbler(errorReader);
 
         // Create & Start Gobbler Threads
         // Create new thread objects, give these threads Gobbler tasks, and start them
         // Threads will run in background, reading both of the streams
-        val outputThread = Thread(outputGobbler).apply { start() }
-        val errorThread = Thread(errorGobbler).apply { start() }
+        outputThread = Thread(outputGobbler).apply { start() }
+        errorThread = Thread(errorGobbler).apply { start() }
         // -- END OF CONCURRENT STREAM READING --
 
         // Wait for completion of FFmpeg process
         // Main thread waits for external process to finish OR timeout limit is reached
         // exited will be true IF process finished within timeout limit
         val exited = process.waitFor(timeoutSeconds, TimeUnit.SECONDS)
+
+        // Handle timeout
+        if (!exited) {
+            logger.warn("Process timed out after {} seconds, terminating forcibly", timeoutSeconds)
+
+            return ConversionResult(
+                isSuccess = false,
+                exitCode = -1, // timeout code
+                output = outputGobbler.lines.joinToString("\n"),
+                error = "Process timed out after $timeoutSeconds seconds"
+            )
+        }
 
         // Join Gobbler Threads
         // Once main thread finished, ensure Gobbler tasks have read all available output
@@ -61,14 +79,14 @@ fun executeCommand(command: List<String>, timeoutSeconds: Long = 60): Conversion
 
         // Handle timeout
         // If exited is false, process timed out
-        if (!exited) {
-            return ConversionResult(
-                isSuccess = false,
-                exitCode = -1, // timeout code
-                output = outputGobbler.lines.joinToString("\n"), // include any output read
-                error = errorGobbler.lines.joinToString("\n")
-            )
-        }
+//        if (!exited) {
+//            return ConversionResult(
+//                isSuccess = false,
+//                exitCode = -1, // timeout code
+//                output = outputGobbler.lines.joinToString("\n"), // include any output read
+//                error = errorGobbler.lines.joinToString("\n")
+//            )
+//        }
 
         // If the process finished, get the exit code and full stdout & stderr
         val exitCode = process.exitValue();
@@ -93,5 +111,19 @@ fun executeCommand(command: List<String>, timeoutSeconds: Long = 60): Conversion
             "",
             "Exception during FFmpeg Command Execution: ${e.message}"
         )
+    } finally {
+        // Simple cleanup - force everything to stop
+        outputThread?.interrupt()
+        errorThread?.interrupt()
+
+        process?.let { proc ->
+            if (proc.isAlive) {
+                proc.destroyForcibly()
+            }
+            // Close all streams
+            runCatching { proc.inputStream.close() }
+            runCatching { proc.outputStream.close() }
+            runCatching { proc.errorStream.close() }
+        }
     }
 }
