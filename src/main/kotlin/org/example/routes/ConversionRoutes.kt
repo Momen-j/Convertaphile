@@ -86,6 +86,10 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
     // File upload & conversion endpoint
     post("/conversion") {
         logger.info("=== CONVERSION ENDPOINT HIT ===")
+        val runtime = Runtime.getRuntime()
+        val initialUsed = (runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024
+        val initialTotal = runtime.totalMemory() / 1024 / 1024
+        logger.info("PRE-CONVERSION: Used: ${initialUsed}MB, Total: ${initialTotal}MB")
         // vars needed in order to create final file output
         var tempInputFile: File? = null
         var outputFilePath: String? = null
@@ -331,6 +335,12 @@ fun Routing.conversionRoutes(config: ConversionRouteConfig) {
             ))
 
             logger.info("Successfully sent converted file metadata")
+
+            runtime.gc() // Suggest garbage collection
+            Thread.sleep(100) // Give GC a moment
+            val postUsed = (runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024
+            val postTotal = runtime.totalMemory() / 1024 / 1024
+            logger.info("POST-CONVERSION: Used: ${postUsed}MB, Total: ${postTotal}MB, Diff: ${postUsed - initialUsed}MB")
 
 
         } catch (e: Exception) {
